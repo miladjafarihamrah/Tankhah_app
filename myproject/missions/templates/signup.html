@@ -1,0 +1,8 @@
+<h2>ثبت‌نام</h2>
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">ثبت‌نام</button>
+
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+    <script src="{% static 'register-sw.js' %}"></script>

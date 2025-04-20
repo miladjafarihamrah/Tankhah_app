@@ -1,0 +1,178 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>مدیریت ماموریت</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        @font-face {
+            font-family: 'Mellat-Regular';
+            src: url('{% static "fonts/Shabnam Regular.ttf" %}') format('truetype');
+        }
+
+        body {
+            background-color: #2b3d2e;
+            font-family: 'Mellat-Regular', sans-serif;
+            padding: 15px;
+            color: #f1f1f1;
+        }
+
+        /* استایل جدید دکمه بازگشت */
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 10px;
+            background: #1d7f4b;
+            color: #f1f1f1;
+            border-radius: 6px;
+            text-decoration: none;
+            margin-bottom: 15px;
+            font-size: 12px;
+            direction: rtl;
+        }
+
+        .back-button svg {
+            fill: white;
+            width: 14px;
+            height: 14px;
+            margin-right: 5px;
+        }
+
+        /* بقیه استایل‌ها */
+        h2 {
+            text-align: center;
+            margin: 15px 0;
+            font-size: 1.5rem;
+        }
+
+        .card {
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            background: #1d7f4b;
+            border: 1px solid #1d7f4b;
+        }
+
+        select, input, button {
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 6px;
+            width: 100%;
+            font-size: 1rem;
+        }
+
+        button {
+            background: #0e291a;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 1rem;
+            color: #f1f1f1;
+        }
+        
+
+        @media (min-width: 768px) {
+            body {
+                padding: 20px;
+            }
+            .card {
+                padding: 25px;
+            }
+            h2 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- دکمه بازگشت با تغییرات جدید -->
+    <a href="{% url 'home' %}" class="back-button">
+        بازگشت
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14">
+            <path d="M10 17l-5-5 5-5v4h5v2h-5v4z"/>
+        </svg>
+    </a>
+
+    <h2>ثبت ماموریت</h2>
+    <div class="card">
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">ثبت</button>
+        </form>
+    </div>
+
+    {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <p class="{{ message.tags }}">{{ message }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <h2>ویرایش ماموریت</h2>
+    <div class="card">
+        <label for="missionYear">سال:</label>
+    <select id="missionYear" required>
+        <option value="" disabled selected>انتخاب سال...</option>
+        <script>
+            // محاسبه سال جاری شمسی
+            const currentDate = new Date();
+            const gregorianYear = currentDate.getFullYear();
+            const gregorianMonth = currentDate.getMonth() + 1;
+            const gregorianDay = currentDate.getDate();
+            
+            // تبدیل تاریخ میلادی به شمسی (فرمول تقریبی)
+            let jalaliYear = gregorianYear - 621;
+            if (gregorianMonth < 3 || (gregorianMonth === 3 && gregorianDay < 21)) {
+                jalaliYear--;
+            }
+            
+            // نمایش سال‌های شمسی (جاری و ۲ سال قبل)
+            document.write(`
+                <option value="${jalaliYear}" selected>${jalaliYear}</option>
+                <option value="${jalaliYear - 1}">${jalaliYear - 1}</option>
+                <option value="${jalaliYear - 2}">${jalaliYear - 2}</option>
+            `);
+        </script>
+    </select>
+        <label for="missionMonth">ماه:</label>
+        <select id="missionMonth" required>
+            <option value="" disabled selected>انتخاب ماه...</option>
+            <option value="01">فروردین</option>
+            <option value="02">اردیبهشت</option>
+            <option value="03">خرداد</option>
+            <option value="04">تیر</option>
+            <option value="05">مرداد</option>
+            <option value="06">شهریور</option>
+            <option value="07">مهر</option>
+            <option value="08">آبان</option>
+            <option value="09">آذر</option>
+            <option value="10">دی</option>
+            <option value="11">بهمن</option>
+            <option value="12">اسفند</option>
+        </select>
+        <button onclick="editMission()">ویرایش</button>
+    </div>
+    
+    <script>
+        function editMission() {
+            const year = document.getElementById('missionYear').value;
+            const month = document.getElementById('missionMonth').value;
+            if (!year || !month) {
+                alert("لطفاً سال و ماه را انتخاب کنید!");
+                return;
+            }
+            window.location.href = `/edit_mission/?year=${year}&month=${month}`;
+        }
+    </script>
+</body>
+</html>

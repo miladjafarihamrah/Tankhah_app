@@ -1,0 +1,173 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>گزارش‌گیری</title>
+    <link rel="stylesheet" href="{% static 'styles.css' %}">
+    <style>
+        @font-face {
+            font-family: 'Mellat-Regular';
+            src: url('{% static "fonts/Shabnam Regular.ttf" %}') format('truetype');
+        }
+
+        body {
+            background-color: #2b3d2e;
+            font-family: 'Mellat-Regular', sans-serif;
+            padding: 20px;
+            text-align: right;
+            color: #f1f1f1;
+        }
+
+        .back-button-container {
+        display: block;
+        text-align: left;
+        margin-bottom: 16px;
+    }
+
+    .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 10px;
+            background: #1d7f4b;
+            color: #f1f1f1;
+            border-radius: 6px;
+            text-decoration: none;
+            margin-bottom: 15px;
+            font-size: 12px;
+            direction: rtl;
+        }
+    
+
+    .back-button svg {
+        fill: currentColor;
+        width: 18px; /* کاهش اندازه آیکون */
+        height: 18px;
+    }
+
+    .back-button:focus {
+        outline: none;
+        box-shadow: 0 0 10px rgba(0, 255, 115, 0.7);
+    }
+    
+        h2 {
+            color: #f1f1f1;
+            text-align: center;
+            font-size: 28px;
+            margin-bottom: 20px;
+        }
+
+        form {
+            background-color: #1d7f4b;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        form p {
+            margin-bottom: 15px;
+        }
+
+        form label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #ffffff;
+        }
+
+        form input, form select, form textarea {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        form input::placeholder, form textarea::placeholder {
+            color: #888;
+        }
+
+        form button {
+            font-family: 'Mellat-Regular', sans-serif; /* اضافه کردن فونت به دکمه‌ها */
+            background: linear-gradient(145deg, #0e291a, #0e291a);
+            color: white;
+            border: none;
+            padding: 14px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: background 0.3s ease, transform 0.2s ease-in-out;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+
+        select {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-color: white;
+            padding-right: 10px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><polygon points="0,0 20,0 10,10" fill="%230e2a1b"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 12px;
+            padding: 14px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        .messages {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .messages p {
+            color: green;
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 15px;
+            }
+
+            form {
+                padding: 20px;
+            }
+
+            form input, form select, form button {
+                font-size: 18px;
+                padding: 16px;
+            }
+        }
+
+    </style>
+</head>
+<body>
+    <a href="{% url 'home' %}" class="back-button">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18">
+            <path d="M10 17l-5-5 5-5v4h5v2h-5v4z"/>
+        </svg>
+        بازگشت
+    </a>
+    </div>
+
+    <h2>گزارش ماهانه</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" name="report_type" value="mission">دانلود ماموریت‌ها</button>
+        <button type="submit" name="report_type" value="expense">دانلود تنخواه‌ها</button>
+    </form>
+  
+</html>
+<link rel="manifest" href="{% static 'manifest.json' %}">
+<script src="{% static 'register-sw.js' %}"></script>

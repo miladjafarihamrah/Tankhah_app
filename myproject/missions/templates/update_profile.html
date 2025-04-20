@@ -1,0 +1,164 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>ویرایش اطلاعات کاربری</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        @font-face {
+            font-family: 'Mellat-Regular';
+            src: url('{% static "fonts/Shabnam Regular.ttf" %}') format('truetype');
+        }
+
+        body {
+            background-color: #2b3d2e;
+            font-family: 'Mellat-Regular', sans-serif;
+            padding: 20px;
+            text-align: right;
+            color: #f1f1f1;
+        }
+
+        h2 {
+            color: #f1f1f1;
+            text-align: center;
+            font-size: 1.75rem; /* 28px */
+            margin-bottom: 40px; /* افزایش فاصله از فرم */
+            padding-top: 50px; /* فضای اضافی برای دکمه بازگشت */
+        }
+
+        /* فرم و استایل دکمه‌ها */
+        form {
+            padding: 25px;
+            background-color: #1d7f4b;
+            border-radius: 10px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: linear-gradient(145deg, #0e291a, #0e291a);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 1.125rem; /* 18px */
+            padding: 14px;
+            font-weight: bold;
+            transition: background 0.3s ease, transform 0.2s ease-in-out;
+            border-radius: 6px;
+            width: 100%; /* دکمه‌ها در موبایل به صورت کامل عرض را بگیرند */
+        }
+
+        button:hover {
+            background: linear-gradient(145deg, #00ff80, #00ff73);
+            transform: scale(1.05);
+        }
+
+        /* دکمه "بازگشت" */
+        .back-button-container {
+            display: block;
+            text-align: left;
+            margin-bottom: 16px;
+            position: fixed; /* تغییر از absolute به fixed */
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+        }
+
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: linear-gradient(145deg, #1d7f4b, #1d7f4b);
+            color: #f1f1f1;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 8px;
+            border: none;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+            text-decoration: none;
+            transition: background 0.3s ease, transform 0.3s ease;
+        }
+
+        .back-button:hover {
+            background: linear-gradient(145deg, #00ff73, #00ff80);
+            transform: scale(1.05);
+        }
+
+        .back-button svg {
+            fill: currentColor;
+            width: 18px;
+            height: 18px;
+        }
+
+        /* استایل‌های ریسپانسیو */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            h2 {
+                font-size: 1.5rem; /* 24px */
+                margin-bottom: 30px; /* افزایش فاصله در نسخه موبایل */
+                padding-top: 60px; /* فضای بیشتر برای دکمه بازگشت */
+            }
+
+            form {
+                padding: 15px;
+            }
+
+            button {
+                font-size: 1rem; /* 16px */
+                padding: 12px;
+            }
+
+            .back-button-container {
+                top: 10px;
+                right: 10px;
+            }
+
+            .back-button {
+                font-size: 12px;
+                padding: 6px 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="back-button-container">
+        <a href="{% url 'home' %}" class="back-button">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18">
+                <path d="M10 17l-5-5 5-5v4h5v2h-5v4z"/>
+            </svg>
+            بازگشت
+        </a>
+    </div>
+
+    <h2>ویرایش اطلاعات کاربری</h2>
+    <div class="container">
+        <form method="post" class="row g-3">
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="col-12">
+                    <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}
+                        <small class="form-text text-muted">{{ field.help_text }}</small>
+                    {% endif %}
+                    {% for error in field.errors %}
+                        <div class="alert alert-danger">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+            <div class="col-12">
+                <button type="submit">ذخیره تغییرات</button>
+            </div>
+        </form>
+    </div>
+
+</body>
+</html>

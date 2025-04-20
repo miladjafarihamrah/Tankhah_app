@@ -1,0 +1,285 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تنخواه‌های ماه {{ month }}</title>
+    
+    <!-- اضافه کردن Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+    <style>
+        @font-face {
+            font-family: 'Mellat-Regular';
+            src: url('{% static "fonts/Shabnam Regular.ttf" %}') format('truetype');
+        }
+
+        body {
+            font-family: 'Mellat-Regular', sans-serif;
+            background-color: #2b3d2e;
+            margin: 0;
+            padding: 20px;
+            text-align: left;
+            color: #f1f1f1;
+        }
+
+        .back-button-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            margin-bottom: 16px;
+        }
+
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: linear-gradient(145deg, #1d7f4b, #1d7f4b);
+            color: #f1f1f1;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 8px;
+            border: none;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+            text-decoration: none;
+            transition: background 0.3s ease, transform 0.3s ease;
+        }
+
+        .back-button:hover {
+            background: linear-gradient(145deg, #00ff73, #00ff80);
+            transform: scale(1.05);
+        }
+
+        .back-button svg {
+            fill: currentColor;
+            width: 18px;
+            height: 18px;
+        }
+
+        .expense-list {
+            list-style-type: none;
+            padding: 0;
+            margin-top: 20px;
+        }
+
+        .expense-item {
+            background-color: #1d7f4b;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            flex-wrap: wrap;
+        }
+
+        .expense-item:hover {
+            background-color: #16a085;
+            color: white;
+        }
+
+        .expense-item span {
+            flex: 1;
+            margin-right: 10px;
+        }
+
+        .expense-item button {
+            background-color: transparent;
+            color: white;
+            border: none;
+            padding: 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-family: 'Mellat-Regular', sans-serif;
+            margin-left: 10px;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .expense-item button:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .expense-item .edit-button i,
+        .expense-item .delete-button i {
+            font-size: 18px;
+        }
+
+        /* امکان تغییر رنگ آیکون‌ها در حالت هاور */
+        .expense-item .edit-button:hover i {
+            transform: scale(1.5);
+            color: #f39c12;
+        }
+
+        .expense-item .delete-button:hover i {
+            transform: scale(1.5);
+            color: #e74c3c;
+
+        }
+
+        .editable-item {
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .editable-item input {
+            background-color: #fff;
+            color: #000;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            padding: 5px;
+        }
+
+        /* ریسپانسیو برای صفحه نمایش‌های کوچک */
+        @media (max-width: 768px) {
+            body {
+                padding: 15px;
+            }
+
+            h2 {
+                font-size: 20px;
+            }
+
+            .expense-item {
+                padding: 10px;
+                flex-wrap: nowrap;
+            }
+
+            .expense-item button {
+                padding: 4px;
+                font-size: 12px;
+                margin-left: 5px;
+            }
+
+            .expense-item span {
+                font-size: 14px;
+            }
+
+            .back-button {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+        }
+
+        /* ریسپانسیو برای صفحه نمایش‌های خیلی کوچک */
+        @media (max-width: 480px) {
+            .expense-item {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .expense-item button {
+                width: auto;
+                margin-left: 5px;
+                padding: 6px 12px;
+                font-size: 10px;
+            }
+
+            .expense-item span {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="back-button-container">
+        <a href="{% url 'add_expense' %}" class="back-button">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18">
+                <path d="M10 17l-5-5 5-5v4h5v2h-5v4z"/>
+            </svg>
+            بازگشت
+        </a>
+    </div>
+
+    <h2 id="monthTitle">تنخواه‌های ماه {{ month }}</h2>
+    <ul class="expense-list" id="expenseList">
+        {% for expense in expenses %}
+        <li class="expense-item" data-id="{{ expense.id }}" data-date="{{ expense.date }}">
+            <span>{{ expense.date }}</span>
+            <span>{{ expense.factory }}</span>
+            <span class="formatted-amount">{{ expense.amount }} ریال</span>
+            <span>{{ expense.description }}</span>
+    
+            <!-- دکمه ویرایش -->
+            <button class="edit-button" onclick="editExpense('{{ expense.id }}', '{{ expense.factory }}', '{{ expense.amount }}', '{{ expense.description }}')">
+                <i class="fas fa-pencil-alt"></i>
+            </button>
+    
+            <!-- دکمه حذف -->
+            <button class="delete-button" onclick="deleteExpense('{{ expense.id }}')">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        </li>
+        {% endfor %}
+    </ul>
+
+    <script>
+        function getPersianMonthName(monthNumber) {
+            const months = [
+                "فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور",
+                "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"
+            ];
+            return months[monthNumber - 1] || "نامشخص";
+        }
+
+        // اصلاح کد به نحوی که ماه را از رشته موجود در {{ month }} استخراج کنیم
+        const monthTitle = document.getElementById('monthTitle');
+        const currentText = monthTitle.innerText;
+
+        // استخراج ماه به صورت عدد از رشته (مثلاً از "ماه 02" می‌شود 02)
+        const monthNumber = currentText.match(/\d+/);
+
+        if (monthNumber && monthNumber[0]) {
+            const monthName = getPersianMonthName(parseInt(monthNumber[0], 10));
+            monthTitle.innerText = currentText.replace(monthNumber[0], monthName);
+        }
+
+        function deleteExpense(expenseId) {
+            if (confirm('آیا از حذف این تنخواه مطمئن هستید؟')) {
+                fetch(`/delete_expense/?id=${expenseId}`, {
+                    method: 'GET',
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert('تنخواه حذف شد!');
+                        location.reload();
+                    } else {
+                        alert('خطا در حذف تنخواه.');
+                    }
+                });
+            }
+        }
+    
+        function editExpense(id, factory, amount, description) {
+            const newFactory = prompt('کارخانه جدید:', factory);
+            const newAmount = prompt('مبلغ جدید:', amount);
+            const newDescription = prompt('توضیحات جدید:', description);
+
+            if (newFactory && newAmount && newDescription) {
+                fetch(`/edit_expense_details/?id=${id}&factory=${newFactory}&amount=${newAmount}&description=${newDescription}`, {
+                    method: 'GET',
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert('ویرایش با موفقیت انجام شد!');
+                        location.reload();
+                    } else {
+                        alert('خطا در ویرایش: ' + data.message);
+                    }
+                });
+            } else {
+                alert('لطفاً تمام فیلدها را پر کنید.');
+            }
+        }
+    </script>
+</body>
+</html>

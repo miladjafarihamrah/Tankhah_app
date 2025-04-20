@@ -1,0 +1,260 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>داشبورد مدیریت</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+    <style>
+        @font-face {
+            font-family: 'Mellat-Regular';
+            src: url('{% static "fonts/Shabnam Regular.ttf" %}') format('truetype');
+        }
+
+        body {
+            background-color: #2b3d2e;
+            font-family: 'Mellat-Regular', sans-serif;
+        }
+
+        .card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            background-color: #1d7f4b;
+            color: #f1f1f1;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        /* یکسان‌سازی فونت اعداد */
+        p.display-4, #budget-value, input[name='amount'] {
+            font-family: 'Mellat-Regular', sans-serif !important;
+        }
+
+        /* دکمه خروج و ویرایش اطلاعات کاربری */
+        .logout-form {
+            position: relative; /* تغییر به relative برای قرارگیری در کنار دکمه ویرایش */
+            top: auto;
+            left: auto;
+        }
+
+        .logout-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            color: #adbc9f;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: color 0.3s ease-in-out, transform 0.2s ease-in-out;
+        }
+
+        .logout-btn:hover {
+            color: #00ff73;
+            transform: scale(1.1);
+        }
+
+        .logout-btn i {
+            font-size: 20px;
+        }
+
+        /* دکمه‌های افزایش و کاهش */
+        .btn-increase {
+            background-color: #268129;
+            color: #ffffff;
+            border: none;
+        }
+        .btn-decrease {
+            background-color: #520702;
+            color: #ffffff;
+            border: none;
+        }
+        .btn-increase:hover {
+            background-color: #2df337;
+        }
+        .btn-decrease:hover {
+            background-color: #ff0000;
+        }
+
+        /* دکمه‌های منو */
+        .menu-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+            margin-bottom: 40px;
+        }
+        .menu-buttons .btn {
+            background-color: #0e291a;
+            color: #f1f1f1;
+            border-radius: 25px;
+            padding: 10px 20px;
+            transition: background-color 0.3s ease;
+            flex: 1;
+            max-width: 200px;
+            text-align: center;
+        }
+        
+        /* استایل موبایل */
+        @media screen and (max-width: 768px) {
+            h1, h3 {
+                font-size: 20px;
+            }
+            .menu-buttons {
+                flex-direction: column;
+                margin-bottom: 60px;
+            }
+            .menu-buttons .btn {
+                max-width: 100%;
+            }
+            .input-group {
+                width: 100%;
+            }
+        }
+
+        /* تغییر رنگ‌ها */
+        h1.text-center, 
+        p.text-center.text-muted, 
+        h3 {
+            color: #f1f1f1 !important;
+        }
+
+        .card-title, 
+        .display-4 {
+            color: #f1f1f1 !important;
+        }
+
+        .text-muted.float-end {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            text-align: right;
+        }
+
+    </style>
+</head>
+<body>
+    <!-- دکمه خروج و ویرایش اطلاعات کاربری -->
+    <div style="position: absolute; top: 10px; left: 10px; display: flex; gap: 10px;">
+        <!-- دکمه خروج -->
+        <form method="post" action="{% url 'logout' %}" class="logout-form">
+            {% csrf_token %}
+            <button type="submit" class="logout-btn">
+                <i class="fas fa-sign-out-alt"></i> خروج
+            </button>
+        </form>
+
+        <!-- دکمه ویرایش اطلاعات کاربری -->
+        <a href="{% url 'update_profile' %}" class="logout-btn">
+            <i class="fas fa-user"></i>
+        </a>
+    </div>
+
+    <div class="container mt-5">
+        <h1 class="text-center animate__animated animate__fadeIn">سلام، {{ full_name }}!</h1>
+        <p class="text-center text-muted float-end">امروز: {{ today }}</p>
+
+        <!-- کارت‌های اطلاعات -->
+        <div class="row mb-4">
+            <div class="col-md-6 mb-3">
+                <div class="card text-center shadow animate__animated animate__fadeInLeft">
+                    <div class="card-body">
+                        <h5 class="card-title">تعداد مأموریت‌های ماه جاری</h5>
+                        <p class="display-4 text-primary" id="mission-count">{{ mission_count }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="card text-center shadow animate__animated animate__fadeInRight">
+                    <div class="card-body">
+                        <h5 class="card-title">مانده حساب(ریال)</h5>
+                        <p class="display-4 text-success" id="budget-value">{{ balance }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- فرم تغییر مانده حساب -->
+        <div class="text-center mb-4">
+            <h3>افزایش مانده حساب</h3>
+            <form method="post" action="{% url 'update_balance' %}" class="d-flex justify-content-center gap-2 align-items-center">
+                {% csrf_token %}
+                <input type="text" name="amount" placeholder="مبلغ را وارد کنید" required class="form-control w-auto">
+                <button type="submit" name="action" value="increase" class="btn btn-increase rounded-circle d-flex justify-content-center align-items-center" style="width: 50px; height: 50px; padding: 0;">
+                    <span class="fs-4" style="line-height: 1;">+</span>
+                </button>
+                <button type="submit" name="action" value="decrease" class="btn btn-decrease rounded-circle d-flex justify-content-center align-items-center" style="width: 50px; height: 50px; padding: 0;">
+                    <span class="fs-4" style="line-height: 1;">-</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- نمایش پیام‌ها -->
+        {% if messages %}
+            <div class="container mt-4">
+                {% for message in messages %}
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- منو -->
+        <div class="menu-buttons">
+            <a href="{% url 'add_mission' %}" class="btn">ثبت مأموریت</a>
+            <a href="{% url 'add_expense' %}" class="btn">ثبت تنخواه</a>
+            <a href="{% url 'generate_report' %}" class="btn">گزارش‌گیری</a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // تابع تبدیل اعداد انگلیسی به فارسی فقط برای نمایش
+        function convertToPersian(num) {
+            let persianDigits = ["٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"];
+            return num.replace(/\d/g, d => persianDigits[d]);
+        }
+    
+        // تابع جداسازی سه‌رقمی اعداد
+        function formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+    
+        document.addEventListener("DOMContentLoaded", function() {
+            let missionCount = document.getElementById("mission-count");
+            let budgetValue = document.getElementById("budget-value");
+    
+            if (missionCount) {
+                let num = missionCount.innerText.replace(/,/g, '').trim();
+                missionCount.innerText = convertToPersian(formatNumber(num));
+            }
+    
+            if (budgetValue) {
+                let num = budgetValue.innerText.replace(/,/g, '').trim();
+                budgetValue.innerText = convertToPersian(formatNumber(num));
+            }
+    
+            let amountInput = document.querySelector("input[name='amount']");
+            if (amountInput) {
+                amountInput.addEventListener("input", function(e) {
+                    let rawValue = e.target.value.replace(/[^0-9]/g, ""); // حذف کاراکترهای غیرعددی
+                    let formattedValue = formatNumber(rawValue);
+                    e.target.value = formattedValue; // مقدار داخل فیلد انگلیسی بماند
+                });
+    
+                amountInput.form.addEventListener("submit", function() {
+                    amountInput.value = amountInput.value.replace(/,/g, ''); // حذف جداکننده‌ها قبل از ارسال فرم
+                });
+            }
+        });
+    </script>
+</body>
+</html>
+<link rel="manifest" href="{% static 'manifest.json' %}">
+<script src="{% static 'register-sw.js' %}"></script>
