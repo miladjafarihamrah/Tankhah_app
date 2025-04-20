@@ -33,6 +33,9 @@ DEBUG = True
 ALLOWED_HOSTS = ['*']
 
 
+CSRF_TRUSTED_ORIGINS = ["https://supishi.net:9001",]
+
+
 # Application definition
 
 INSTALLED_APPS = [
