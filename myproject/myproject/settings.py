@@ -124,6 +124,9 @@ USE_I18N = True
 USE_TZ = True
 
 
+SESSION_COOKIE_NAME = 'tankhah_app'
+
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
@@ -139,4 +142,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PWA_SERVICE_WORKER_PATH = os.path.join(BASE_DIR, 'static', 'serviceworker.js')
+
 
