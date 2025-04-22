@@ -307,7 +307,7 @@ def generate_report(request):
                 'expense': {
                     'model': Expense,
                     'output_name': f"t_{request.user.username}_{year}_{month}.xlsx",
-                    'header': ['ردیف', 'تاریخ', 'توضیحات', 'مبلغ', 'کارخانه']
+                    'header': ['ردیف', 'تاریخ', 'توضیحات', 'مبلغ(ریال)', 'کارخانه']
                 }
             }
 
@@ -391,7 +391,7 @@ def generate_report(request):
 
                 if filtered_data:
                     # اضافه کردن سطر جمع کل
-                    ws.append(['', '', 'جمع کل(تومان)', total_amount, ''])
+                    ws.append(['', '', 'جمع کل(ریال)', total_amount, ''])
                     # اعمال استایل به سطر جمع کل
                     for cell in ws[ws.max_row]:
                         cell.font = Font(size=14, bold=True, name="B Nazanin")  # فونت بولد و سایز ۱۴
