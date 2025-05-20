@@ -323,13 +323,15 @@ def generate_report(request):
 
             for item in data:
                 item_date = item.date  # تاریخ به صورت رشته (مثلاً '1402/07/15')
-                item_year, item_month, _ = map(int, item_date.split('/'))  # استخراج سال و ماه از تاریخ
-                
+                item_year, item_month, item_day = map(int, item_date.split('/'))  # استخراج سال و ماه از تاریخ
                 # فیلتر کردن داده‌ها بر اساس ماه و سال
                 if item_month == month and item_year == year:
                     # تبدیل تاریخ به فرمت datetime برای مرتب‌سازی
-                    date_obj = datetime.strptime(item_date, '%Y/%m/%d')
-                    
+                    jalai_date = jdatetime.date(item_year, item_month, item_day)
+                    date_obj = jalai_date.togregorian()
+                    # date_obj = datetime.strptime(item_date, '%Y/%m/%d')
+                    print("########################")
+
                     if report_type == 'mission':
                         filtered_data.append([date_obj, item.date, item.factory])
                     elif report_type == 'expense':

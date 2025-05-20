@@ -28,11 +28,17 @@ class MissionForm(forms.ModelForm):
 
     date = forms.CharField(
         label='تاریخ',
-       initial=jdatetime.datetime.now().strftime('%Y/%m/%d'), 
-        widget=forms.DateInput(attrs={'type': 'text', 'class': 'form-control', 'placeholder': ' تاریخ شمسی نمونه 1403/10/10'}),
-  
+        widget=forms.DateInput(attrs={
+            'type': 'text',
+            'class': 'form-control',
+            'placeholder': 'تاریخ شمسی نمونه 1403/10/10'
+        }),
     )
-    
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.is_bound:  # فقط اگر فرم با داده پر نشده
+            self.fields['date'].initial = jdatetime.datetime.now().strftime('%Y/%m/%d')
 
     factory = forms.CharField(
         label='کارخانه',
@@ -68,10 +74,18 @@ class ExpenseForm(forms.ModelForm):
     
     date = forms.CharField(
         label='تاریخ',
-        initial=jdatetime.datetime.now().strftime('%Y/%m/%d'), 
-        widget=forms.DateInput(attrs={'type': 'text', 'class': 'form-control', 'placeholder': ' تاریخ شمسی نمونه 1403/10/10'}),
+        widget=forms.DateInput(attrs={
+            'type': 'text',
+            'class': 'form-control',
+            'placeholder': 'تاریخ شمسی نمونه 1403/10/10'
+        }),
     )
-    
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.is_bound:  # فقط اگر فرم با داده پر نشده
+            self.fields['date'].initial = jdatetime.datetime.now().strftime('%Y/%m/%d')
+
     amount = forms.IntegerField(
         label='مبلغ(ریال)',
         widget=forms.NumberInput(attrs={'type': 'number', 'class': 'form-control', 'placeholder': 'لطفا مبلغ را وارد کنید'}),

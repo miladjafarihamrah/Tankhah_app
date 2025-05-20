@@ -202,9 +202,9 @@
     <ul class="expense-list" id="expenseList">
         {% for expense in expenses %}
         <li class="expense-item" data-id="{{ expense.id }}" data-date="{{ expense.date }}">
-            <span>{{ expense.date }}</span>
+            <span class="expense-date">{{ expense.date }}</span>
             <span>{{ expense.factory }}</span>
-            <span class="formatted-amount">{{ expense.amount }} ریال</span>
+            <span class="formatted-amount" data-amount="{{ expense.amount }}">{{ expense.amount }} ریال</span>
             <span>{{ expense.description }}</span>
     
             <!-- دکمه ویرایش -->
@@ -221,6 +221,13 @@
     </ul>
 
     <script>
+    document.querySelectorAll('.formatted-amount').forEach(element => {
+        let amount = element.dataset.amount || element.innerText.replace(/\D/g, ''); // مقدار اصلی را حفظ کن
+        element.dataset.amount = amount; // مقدار اصلی ذخیره شود
+        element.innerText = Number(amount).toLocaleString('fa-IR') + ' ریال'; // اضافه کردن "ریال" به انتهای مقدار
+    });
+
+
         function getPersianMonthName(monthNumber) {
             const months = [
                 "فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور",
@@ -240,7 +247,31 @@
             const monthName = getPersianMonthName(parseInt(monthNumber[0], 10));
             monthTitle.innerText = currentText.replace(monthNumber[0], monthName);
         }
+        // تابع مرتب‌سازی ماموریت‌ها بر اساس تاریخ از کم به زیاد
+        function sortExpenseByDate() {
+            const expenseList = document.getElementById('expenseList');
+            const expenses = Array.from(expenseList.getElementsByTagName('li'));
 
+            // مرتب‌سازی ماموریت‌ها بر اساس تاریخ
+            expenses.sort((a, b) => {
+                const dateA = a.querySelector('.expense-date').innerText;
+                const dateB = b.querySelector('.expense-date').innerText;
+                
+                // تبدیل تاریخ‌ها به فرمت YYYY/MM/DD و مقایسه آن‌ها
+                const [yearA, monthA, dayA] = dateA.split('/').map(Number);
+                const [yearB, monthB, dayB] = dateB.split('/').map(Number);
+                
+                // مقایسه تاریخ‌ها
+                return new Date(yearA, monthA - 1, dayA) - new Date(yearB, monthB - 1, dayB);
+            });
+
+            // اضافه کردن دوباره عناصر مرتب‌شده به لیست
+            expenses.forEach(expense => expenseList.appendChild(expense));
+        }
+
+        // اجرای تابع مرتب‌سازی هنگام بارگذاری صفحه
+        sortExpenseByDate();
+         
         function deleteExpense(expenseId) {
             if (confirm('آیا از حذف این تنخواه مطمئن هستید؟')) {
                 fetch(`/delete_expense/?id=${expenseId}`, {
@@ -257,6 +288,7 @@
                 });
             }
         }
+
     
         function editExpense(id, factory, amount, description) {
             const newFactory = prompt('کارخانه جدید:', factory);
