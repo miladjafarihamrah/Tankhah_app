@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django_jalali.db.models import jDateField
 
 class Mission(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -45,3 +46,14 @@ class TransactionHistory(models.Model):
     
     def __str__(self):
         return f"{self.user} - {self.amount} - {self.date}"
+#فرم خودرویی 
+class Khodro(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    date = models.CharField(max_length=10)   # تاریخ شمسی
+    kilometer = models.PositiveIntegerField()  # کیلومتر
+    amount = models.IntegerField()  # مبلغ
+    description = models.CharField(max_length=100, blank=True, null=True)  # شرح سرویس
+
+    def __str__(self):
+        return f"{self.date} - {self.description} - {self.kilometer}km - {self.amount}ریال"
+    

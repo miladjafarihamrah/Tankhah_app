@@ -2,7 +2,7 @@ import jdatetime
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.models import User
-from .models import Mission, Expense, Balance
+from .models import Mission, Expense, Balance, Khodro
 
 # فرم ثبت‌نام
 class SignUpForm(UserCreationForm):
@@ -35,10 +35,7 @@ class MissionForm(forms.ModelForm):
         }),
     )
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if not self.is_bound:  # فقط اگر فرم با داده پر نشده
-            self.fields['date'].initial = jdatetime.datetime.now().strftime('%Y/%m/%d')
+    
 
     factory = forms.CharField(
         label='کارخانه',
@@ -224,6 +221,35 @@ class UserUpdateForm(forms.ModelForm):
         if commit:
             user.save()
         return user
+    #فرم هزینه خودرو
+class KhodroForm(forms.ModelForm):
+    class Meta:
+        model = Khodro
+        fields = ['date', 'kilometer' , 'amount', 'description']
+    
+    date = forms.CharField(
+        label='تاریخ',
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'تاریخ شمسی (مثال: 1403/10/10)',
+            'id': 'datepicker'
+        }),
+    )
+    amount = forms.IntegerField(
+        label='مبلغ(ریال)',
+        widget=forms.NumberInput(attrs={'type': 'number', 'class': 'form-control', 'placeholder': 'لطفا مبلغ را وارد کنید'}),
+    )
+
+    kilometer = forms.IntegerField(
+        label='کیلومتر',
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'مقدار کیلومتر را وارد کنید'}),
+    )
+    description = forms.CharField(
+        required=False,
+        label='شرح سرویس',
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'جزئیات سرویس را وارد کنید'}),
+    )
+
 
 
 

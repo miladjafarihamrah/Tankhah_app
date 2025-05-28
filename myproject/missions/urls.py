@@ -37,5 +37,8 @@ urlpatterns = [
     path('update-profile/', update_profile, name='update_profile'),
     path('update_mission_factory/<int:mission_id>/', update_mission_factory, name='update_mission_factory'),
     path('edit_expense_details/', views.edit_expense_details, name='edit_expense_details'),
-    
+    path('hazineh_khodro/', views.hazineh_khodro, name='hazineh_khodro'),
+    path('edit_khodro/', views.edit_khodro, name='edit_khodro'),
+    path('delete_khodro/', views.delete_khodro, name='delete_khodro'),
+    path('edit_khodro_details/', views.edit_khodro_details, name='edit_khodro_details'),
 ]

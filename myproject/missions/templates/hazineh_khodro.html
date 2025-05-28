@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مدیریت تنخواه</title>
+    <title>فرم هزینه خودرویی</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         @font-face {
@@ -59,7 +59,7 @@
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
         
-        .register-expense-card, .edit-expense-card {
+        .register-khodro-card, .edit-khodro-card {
             background: linear-gradient(145deg, #1d7f4b, #1d7f4b);
             border: 1px solid #1d7f4b;
         }
@@ -176,8 +176,8 @@
             </svg>
         </a>
 
-        <h2>ثبت تنخواه</h2>
-        <div class="card register-expense-card">
+        <h2> ثبت هزینه خودرو</h2>
+        <div class="card register-khodro-card">
             <form method="post">
                 {% csrf_token %}
                 {{ form.non_field_errors }}
@@ -188,9 +188,9 @@
                     {{ form.date.errors }}
                 </div>
                 <div class="mb-3">
-                    {{ form.description.label_tag }}
-                    {{ form.description }}
-                    {{ form.description.errors }}
+                    {{ form.kilometer.label_tag }}
+                    {{ form.kilometer }}
+                    {{ form.kilometer.errors }}
                 </div>
                 <div class="mb-3">
                     {{ form.amount.label_tag }}
@@ -199,9 +199,9 @@
                     <p id="wordOutput" style="color: #f1f1f1; font-size: 0.9rem;"></p>
                 </div>
                 <div class="mb-3">
-                    {{ form.factory.label_tag }}
-                    {{ form.factory }}
-                    {{ form.factory.errors }}
+                    {{ form.description.label_tag }}
+                    {{ form.description }}
+                    {{ form.description.errors }}
                 </div>
                 <button type="submit" class="btn btn-success">ثبت</button>
             </form>
@@ -243,105 +243,6 @@
                 }
             });
         </script>
-                
-        <script>
-            // تبدیل مقدار عددی مبلغ به حروف
-            document.addEventListener("DOMContentLoaded", function () {
-                let amountInput = document.querySelector("[name='amount']");
-                
-                if (amountInput) {
-                    amountInput.setAttribute("id", "amount");
-                    amountInput.addEventListener("input", convertToWords);
-                }
-            });
-        
-            function convertToWords() {
-                let amountInput = document.getElementById("amount");
-                let wordOutput = document.getElementById("wordOutput");
-                
-                if (!amountInput || !wordOutput) return;
-                
-                // محدودیت: حداکثر 9 رقم (تا 999 میلیون تومان)
-                let amountValue = amountInput.value.replace(/[^0-9]/g, '').substring(0, 9);
-                amountInput.value = amountValue; // اعمال محدودیت روی ورودی
-                
-                if (!amountValue || amountValue === '0') {
-                    wordOutput.innerText = "";
-                    return;
-                }
-        
-                let amountInTomans = Math.floor(parseInt(amountValue) / 10); // ریال به تومان
-                
-                if (amountInTomans <= 0) {
-                    wordOutput.innerText = "";
-                    return;
-                }
-                
-                let words = numberToPersianWords(amountInTomans) + " تومان";
-                wordOutput.innerText = words;
-            }
-        
-            function numberToPersianWords(number) {
-                if (number === 0) return "صفر";
-                
-                const persianNumbers = ["", "یک", "دو", "سه", "چهار", "پنج", "شش", "هفت", "هشت", "نه"];
-                const persianTens = ["", "ده", "بیست", "سی", "چهل", "پنجاه", "شصت", "هفتاد", "هشتاد", "نود"];
-                const persianHundreds = ["", "صد", "دویست", "سیصد", "چهارصد", "پانصد", "ششصد", "هفتصد", "هشتصد", "نهصد"];
-                const persianTeens = ["ده", "یازده", "دوازده", "سیزده", "چهارده", "پانزده", "شانزده", "هفده", "هجده", "نوزده"];
-        
-                function convertThreeDigits(num) {
-                    let result = "";
-                    let hundred = Math.floor(num / 100);
-                    let remainder = num % 100;
-                    
-                    if (hundred > 0) {
-                        result += persianHundreds[hundred];
-                    }
-                    
-                    if (remainder > 0) {
-                        if (hundred > 0) result += " و ";
-                        
-                        if (remainder < 10) {
-                            result += persianNumbers[remainder];
-                        } else if (remainder < 20) {
-                            result += persianTeens[remainder - 10];
-                        } else {
-                            let ten = Math.floor(remainder / 10);
-                            let unit = remainder % 10;
-                            result += persianTens[ten];
-                            if (unit > 0) {
-                                result += " و " + persianNumbers[unit];
-                            }
-                        }
-                    }
-                    
-                    return result;
-                }
-        
-                // فقط تا میلیون
-                if (number < 1000) {
-                    return convertThreeDigits(number);
-                } else if (number < 1000000) {
-                    let thousands = Math.floor(number / 1000);
-                    let remainder = number % 1000;
-                    let result = convertThreeDigits(thousands) + " هزار";
-                    if (remainder > 0) {
-                        result += " و " + convertThreeDigits(remainder);
-                    }
-                    return result;
-                } else {
-                    let millions = Math.floor(number / 1000000);
-                    let remainder = number % 1000000;
-                    let result = convertThreeDigits(millions) + " میلیون";
-                    if (remainder > 0) {
-                        result += " و " + numberToPersianWords(remainder);
-                    }
-                    return result;
-                }
-            }
-        </script>
-        
-        
 
         {% if messages %}
             <div class="messages">
@@ -351,18 +252,18 @@
             </div>
         {% endif %}
 
-        <h2>ویرایش تنخواه</h2>
-        <div class="card edit-expense-card">
+        <h2>ویرایش فرم خودرویی</h2>
+        <div class="card edit-khodro-card">
             <div class="year-month-selector">
                 <div>
-                    <label for="expenseYear">سال:</label>
-                    <select id="expenseYear" required>
+                    <label for="khodroYear">سال:</label>
+                    <select id="khodroYear" required>
                         <option value="" disabled selected>انتخاب سال</option>
                     </select>
                 </div>
                 <div>
-                    <label for="expenseMonth">ماه:</label>
-                    <select id="expenseMonth" required>
+                    <label for="khodroMonth">ماه:</label>
+                    <select id="khodroMonth" required>
                         <option value="" disabled selected>انتخاب ماه</option>
                         <option value="01">فروردین</option>
                         <option value="02">اردیبهشت</option>
@@ -379,7 +280,7 @@
                     </select>
                 </div>
             </div>
-            <button onclick="editExpense()">ویرایش</button>
+            <button onclick="editKhodro()">ویرایش</button>
         </div>
     </div>
 
@@ -398,7 +299,7 @@
         }
 
         function populateYearSelect() {
-            const yearSelect = document.getElementById('expenseYear');
+            const yearSelect = document.getElementById('khodroYear');
             const currentYear = getCurrentPersianYear();
             
             yearSelect.innerHTML = '<option value="" disabled selected>انتخاب سال</option>';
@@ -413,19 +314,115 @@
             yearSelect.value = currentYear;
         }
 
-        function editExpense() {
-            const year = document.getElementById('expenseYear').value;
-            const month = document.getElementById('expenseMonth').value;
+        function editKhodro() {
+            const year = document.getElementById('khodroYear').value;
+            const month = document.getElementById('khodroMonth').value;
             
             if (!year || !month) {
-                alert("لطفاً سال و ماه را انتخاب کنید!");
+                alert("لطفاً سال  را انتخاب کنید!");
                 return;
             }
             
-            window.location.href = `{% url "edit_expense" %}?year=${year}&month=${month}`;
+            window.location.href = `{% url "edit_khodro" %}?year=${year}&month=${month}`;
         }
 
         document.addEventListener('DOMContentLoaded', populateYearSelect);
+    </script>
+    <script>
+        // تبدیل مقدار عددی مبلغ به حروف
+        document.addEventListener("DOMContentLoaded", function () {
+            let amountInput = document.querySelector("[name='amount']");
+            
+            if (amountInput) {
+                amountInput.setAttribute("id", "amount");
+                amountInput.addEventListener("input", convertToWords);
+            }
+        });
+    
+        function convertToWords() {
+            let amountInput = document.getElementById("amount");
+            let wordOutput = document.getElementById("wordOutput");
+            
+            if (!amountInput || !wordOutput) return;
+            
+            // محدودیت: حداکثر 9 رقم (تا 999 میلیون تومان)
+            let amountValue = amountInput.value.replace(/[^0-9]/g, '').substring(0, 9);
+            amountInput.value = amountValue; // اعمال محدودیت روی ورودی
+            
+            if (!amountValue || amountValue === '0') {
+                wordOutput.innerText = "";
+                return;
+            }
+    
+            let amountInTomans = Math.floor(parseInt(amountValue) / 10); // ریال به تومان
+            
+            if (amountInTomans <= 0) {
+                wordOutput.innerText = "";
+                return;
+            }
+            
+            let words = numberToPersianWords(amountInTomans) + " تومان";
+            wordOutput.innerText = words;
+        }
+    
+        function numberToPersianWords(number) {
+            if (number === 0) return "صفر";
+            
+            const persianNumbers = ["", "یک", "دو", "سه", "چهار", "پنج", "شش", "هفت", "هشت", "نه"];
+            const persianTens = ["", "ده", "بیست", "سی", "چهل", "پنجاه", "شصت", "هفتاد", "هشتاد", "نود"];
+            const persianHundreds = ["", "صد", "دویست", "سیصد", "چهارصد", "پانصد", "ششصد", "هفتصد", "هشتصد", "نهصد"];
+            const persianTeens = ["ده", "یازده", "دوازده", "سیزده", "چهارده", "پانزده", "شانزده", "هفده", "هجده", "نوزده"];
+    
+            function convertThreeDigits(num) {
+                let result = "";
+                let hundred = Math.floor(num / 100);
+                let remainder = num % 100;
+                
+                if (hundred > 0) {
+                    result += persianHundreds[hundred];
+                }
+                
+                if (remainder > 0) {
+                    if (hundred > 0) result += " و ";
+                    
+                    if (remainder < 10) {
+                        result += persianNumbers[remainder];
+                    } else if (remainder < 20) {
+                        result += persianTeens[remainder - 10];
+                    } else {
+                        let ten = Math.floor(remainder / 10);
+                        let unit = remainder % 10;
+                        result += persianTens[ten];
+                        if (unit > 0) {
+                            result += " و " + persianNumbers[unit];
+                        }
+                    }
+                }
+                
+                return result;
+            }
+    
+            // فقط تا میلیون
+            if (number < 1000) {
+                return convertThreeDigits(number);
+            } else if (number < 1000000) {
+                let thousands = Math.floor(number / 1000);
+                let remainder = number % 1000;
+                let result = convertThreeDigits(thousands) + " هزار";
+                if (remainder > 0) {
+                    result += " و " + convertThreeDigits(remainder);
+                }
+                return result;
+            } else {
+                let millions = Math.floor(number / 1000000);
+                let remainder = number % 1000000;
+                let result = convertThreeDigits(millions) + " میلیون";
+                if (remainder > 0) {
+                    result += " و " + numberToPersianWords(remainder);
+                }
+                return result;
+            }
+        }
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

@@ -8,12 +8,14 @@ from django.shortcuts import get_object_or_404
 from .forms import SignUpForm, LoginForm
 from .forms import MissionForm
 from .forms import ExpenseForm
+from .forms import KhodroForm
 from .forms import ReportForm
 
 
 from .models import Mission
 from .models import Expense  
 from .models import Balance
+from .models import Khodro
 from .models import TransactionHistory
 
 
@@ -117,28 +119,39 @@ def home(request):
 import os
 from openpyxl import Workbook, load_workbook
 
+def convert_persian_numbers_to_english(text):
+    """تبدیل اعداد فارسی به انگلیسی"""
+    persian_numbers = "۰۱۲۳۴۵۶۷۸۹"
+    english_numbers = "0123456789"
+    translation_table = str.maketrans(persian_numbers, english_numbers)
+    return text.translate(translation_table)
+
 def add_mission(request):
     if not request.user.is_authenticated:
         return redirect('login')
-    
+
     if request.method == 'POST':
         form = MissionForm(request.POST)
         if form.is_valid():
             mission = form.save(commit=False)
             mission.user = request.user
 
-            # بررسی تکراری نبودن تاریخ ماموریت
+            # تبدیل تاریخ به اعداد انگلیسی قبل از ذخیره در دیتابیس
+            mission.date = convert_persian_numbers_to_english(mission.date)
+
+            # بررسی تکراری نبودن تاریخ ماموریت برای همین کاربر
             existing_mission = Mission.objects.filter(user=request.user, date=mission.date).exists()
             if existing_mission:
                 messages.error(request, 'خطا: تاریخ ماموریت تکراری است.')
                 return render(request, 'add_mission.html', {'form': form})
 
-            mission.save()  # ذخیره در دیتابیس
+            mission.save()  # ذخیره ماموریت در دیتابیس
             return redirect('home')
         else:
             messages.error(request, 'خطا در ثبت ماموریت. لطفاً دوباره تلاش کنید.')
     else:
         form = MissionForm()
+
     return render(request, 'add_mission.html', {'form': form})
 def edit_mission(request):
     year = request.GET.get('year')
@@ -174,31 +187,35 @@ def delete_mission(request):
     return JsonResponse({'status': 'success', 'message': 'ماموریت با موفقیت حذف شد.'})
 
 
-  
-
-
 def add_expense(request):
     if not request.user.is_authenticated:
         return redirect('login')
-    
+
     if request.method == 'POST':
         form = ExpenseForm(request.POST)
         if form.is_valid():
             expense = form.save(commit=False)
             expense.user = request.user
-            expense.save()
+
+            # تبدیل اعداد فارسی به انگلیسی
+            expense.date = convert_persian_numbers_to_english(expense.date)
 
             # کاهش مانده حساب
-            balance = Balance.objects.get(user=request.user)
-            balance.amount -= expense.amount
-            balance.save()
+            try:
+                balance = Balance.objects.get(user=request.user)
+                balance.amount -= expense.amount
+                balance.save()
+            except Balance.DoesNotExist:
+                messages.error(request, 'خطا: حسابی برای این کاربر ثبت نشده است.')
+                return render(request, 'add_expense.html', {'form': form})
 
-        
+            expense.save()
             return redirect('home')
         else:
             messages.error(request, 'خطا در ثبت تنخواه. لطفاً دوباره تلاش کنید.')
     else:
         form = ExpenseForm()
+
     return render(request, 'add_expense.html', {'form': form})
 
 # ویرایش هزینه‌ها
@@ -556,4 +573,116 @@ def edit_expense_details(request):
         return JsonResponse({'status': 'error', 'message': 'تنخواه پیدا نشد!'})
     except Balance.DoesNotExist:
         return JsonResponse({'status': 'error', 'message': 'موجودی کاربر یافت نشد!'})
+
+def hazineh_khodro(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+    
+    if request.method == 'POST':
+        form = KhodroForm(request.POST)
+        if form.is_valid():
+            khodro = form.save(commit=False)
+            khodro.user = request.user
+            khodro.save()
+            
+            khodro.date = convert_persian_numbers_to_english(khodro.date)
+
+            # کاهش مانده حساب
+            balance = Balance.objects.get(user=request.user)
+            balance.amount -= khodro.amount
+            balance.save()
+
+        
+            return redirect('home')
+        else:
+            messages.error(request, 'خطا در ثبت تنخواه. لطفاً دوباره تلاش کنید.')
+    else:
+        form = KhodroForm()
+    return render(request, 'hazineh_khodro.html', {'form': form})
+# ویرایش هزینه‌ها
+def edit_khodro(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+    
+    year = request.GET.get('year')
+    month = request.GET.get('month')
+    
+    
+    if not year or not month :
+        return render(request, 'error.html', {'message': 'سال وماه  معتبر نیست.'})
+
+    # فیلتر کردن هزینه‌ها بر اساس ماه
+    khodros = Khodro.objects.filter(user=request.user)
+    khodros = [khodro for khodro in khodros 
+               if khodro.date.split('/')[0] == year
+               and khodro.date.split('/')[1] == month]
+
+    return render(request, 'edit_khodro.html', {
+        'khodros': khodros,
+        'month': month,
+        'year': year,
+          })
+
+
+def delete_khodro(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'status': 'error', 'message': 'احراز هویت لازم است.'})
+    
+    khodro_id = request.GET.get('id')  # دریافت id به جای date
+
+    if not khodro_id:
+        return JsonResponse({'status': 'error', 'message': 'شناسه نامعتبر است.'})
+
+    # حذف khodro بر اساس ID
+    khodro = get_object_or_404(Khodro, id=khodro_id, user=request.user)
+    amount = khodro.amount  # مقدار هزینه برای به‌روزرسانی مانده حساب
+    khodro.delete()
+
+    # افزایش مانده حساب
+    balance = Balance.objects.get(user=request.user)
+    balance.amount += amount
+    balance.save()
+
+    return JsonResponse({'status': 'success', 'message': 'هزینه خودرو با موفقیت حذف شد.'})
+
+def edit_khodro_details(request):
+    khodro_id = request.GET.get('id')
+    kilometer = request.GET.get('kilometer')
+    amount = request.GET.get('amount')
+    description = request.GET.get('description')
+
+    print(f"Khodro ID: {khodro_id}")  # برای دیباگ
+
+    # بررسی اینکه مبلغ به عدد تبدیل شود
+    try:
+        amount = float(amount)  # تبدیل مبلغ به نوع عددی (float)
+    except ValueError:
+        return JsonResponse({'status': 'error', 'message': 'مقدار مبلغ معتبر نیست.'})
+
+    try:
+        # پیدا کردن رکورد مطابق با ID
+        khodro = Khodro.objects.get(id=khodro_id)
+
+        # ذخیره مبلغ قدیمی برای به‌روزرسانی مانده حساب
+        old_amount = khodro.amount
+
+        # به‌روزرسانی اطلاعات هزینه
+        khodro.kilometer = kilometer
+        khodro.amount = amount
+        khodro.description = description
+        khodro.save()  # ذخیره تغییرات در پایگاه داده
+
+        # به‌روزرسانی مانده حساب
+        balance = Balance.objects.get(user=request.user)
+        
+        # کم کردن مبلغ قدیمی و اضافه کردن مبلغ جدید
+        balance.amount += (old_amount - amount)
+        balance.save()
+
+        return JsonResponse({'status': 'success'})
+    except Khodro.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'تنخواه پیدا نشد!'})
+    except Balance.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'موجودی کاربر یافت نشد!'})
+
 

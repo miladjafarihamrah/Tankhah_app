@@ -1,0 +1,317 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>هزینه خودرو ماه {{ month }}</title>
+    
+    <!-- اضافه کردن Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+    <style>
+        @font-face {
+            font-family: 'Mellat-Regular';
+            src: url('{% static "fonts/Shabnam Regular.ttf" %}') format('truetype');
+        }
+
+        body {
+            font-family: 'Mellat-Regular', sans-serif;
+            background-color: #2b3d2e;
+            margin: 0;
+            padding: 20px;
+            text-align: left;
+            color: #f1f1f1;
+        }
+
+        .back-button-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            margin-bottom: 16px;
+        }
+
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: linear-gradient(145deg, #1d7f4b, #1d7f4b);
+            color: #f1f1f1;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 8px;
+            border: none;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+            text-decoration: none;
+            transition: background 0.3s ease, transform 0.3s ease;
+        }
+
+        .back-button:hover {
+            background: linear-gradient(145deg, #00ff73, #00ff80);
+            transform: scale(1.05);
+        }
+
+        .back-button svg {
+            fill: currentColor;
+            width: 18px;
+            height: 18px;
+        }
+
+        .khodro-list {
+            list-style-type: none;
+            padding: 0;
+            margin-top: 20px;
+        }
+
+        .khodro-item {
+            background-color: #1d7f4b;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            flex-wrap: wrap;
+        }
+
+        .khodro-item:hover {
+            background-color: #16a085;
+            color: white;
+        }
+
+        .khodro-item span {
+            flex: 1;
+            margin-right: 10px;
+        }
+
+        .khodro-item button {
+            background-color: transparent;
+            color: white;
+            border: none;
+            padding: 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-family: 'Mellat-Regular', sans-serif;
+            margin-left: 10px;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .khodro-item button:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .khodro-item .edit-button i,
+        .khodro-item .delete-button i {
+            font-size: 18px;
+        }
+
+        /* امکان تغییر رنگ آیکون‌ها در حالت هاور */
+        .khodro-item .edit-button:hover i {
+            transform: scale(1.5);
+            color: #f39c12;
+        }
+
+        .khodro-item .delete-button:hover i {
+            transform: scale(1.5);
+            color: #e74c3c;
+
+        }
+
+        .editable-item {
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .editable-item input {
+            background-color: #fff;
+            color: #000;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            padding: 5px;
+        }
+
+        /* ریسپانسیو برای صفحه نمایش‌های کوچک */
+        @media (max-width: 768px) {
+            body {
+                padding: 15px;
+            }
+
+            h2 {
+                font-size: 20px;
+            }
+
+            .khodro-item {
+                padding: 10px;
+                flex-wrap: nowrap;
+            }
+
+            .khodro-item button {
+                padding: 4px;
+                font-size: 12px;
+                margin-left: 5px;
+            }
+
+            .khodro-item span {
+                font-size: 14px;
+            }
+
+            .back-button {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+        }
+
+        /* ریسپانسیو برای صفحه نمایش‌های خیلی کوچک */
+        @media (max-width: 480px) {
+            .khodro-item {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .khodro-item button {
+                width: auto;
+                margin-left: 5px;
+                padding: 6px 12px;
+                font-size: 10px;
+            }
+
+            .khodro-item span {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="back-button-container">
+        <a href="{% url 'hazineh_khodro' %}" class="back-button">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18">
+                <path d="M10 17l-5-5 5-5v4h5v2h-5v4z"/>
+            </svg>
+            بازگشت
+        </a>
+    </div>
+
+    <h2 id="monthTitle">  هزینه خودرو ماه {{ month }}</h2>
+    <ul class="khodro-list" id="khodroList">
+        {% for khodro in khodros %}
+        <li class="khodro-item" data-id="{{ khodro.id }}" data-date="{{ khodro.date }}">
+            <span class="khodro-date">{{ khodro.date }}</span>
+            <span>{{ khodro.kilometer }}</span>
+            <span class="formatted-amount" data-amount="{{ khodro.amount }}">{{ khodro.amount }} ریال</span>
+            <span>{{ khodro.description }}</span>
+    
+            <!-- دکمه ویرایش -->
+            <button class="edit-button" onclick="editKhodro('{{ khodro.id }}', '{{ khodro.kilometer }}', '{{ khodro.amount }}', '{{ khodro.description }}')">
+                <i class="fas fa-pencil-alt"></i>
+            </button>
+    
+            <!-- دکمه حذف -->
+            <button class="delete-button" onclick="deleteKhodro('{{ khodro.id }}')">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        </li>
+        {% endfor %}
+    </ul>
+
+    <script>
+    document.querySelectorAll('.formatted-amount').forEach(element => {
+        let amount = element.dataset.amount || element.innerText.replace(/\D/g, ''); // مقدار اصلی را حفظ کن
+        element.dataset.amount = amount; // مقدار اصلی ذخیره شود
+        element.innerText = Number(amount).toLocaleString('fa-IR') + ' ریال'; // اضافه کردن "ریال" به انتهای مقدار
+    });
+
+
+        function getPersianMonthName(monthNumber) {
+            const months = [
+                "فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور",
+                "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"
+            ];
+            return months[monthNumber - 1] || "نامشخص";
+        }
+
+        // اصلاح کد به نحوی که ماه را از رشته موجود در {{ month }} استخراج کنیم
+        const monthTitle = document.getElementById('monthTitle');
+        const currentText = monthTitle.innerText;
+
+        // استخراج ماه به صورت عدد از رشته (مثلاً از "ماه 02" می‌شود 02)
+        const monthNumber = currentText.match(/\d+/);
+
+        if (monthNumber && monthNumber[0]) {
+            const monthName = getPersianMonthName(parseInt(monthNumber[0], 10));
+            monthTitle.innerText = currentText.replace(monthNumber[0], monthName);
+        }
+        // تابع مرتب‌سازی ماموریت‌ها بر اساس تاریخ از کم به زیاد
+        function sortKhodroByDate() {
+            const khodroList = document.getElementById('khodroList');
+            const khodros = Array.from(khodroList.getElementsByTagName('li'));
+
+            // مرتب‌سازی ماموریت‌ها بر اساس تاریخ
+            khodros.sort((a, b) => {
+                const dateA = a.querySelector('.khodro-date').innerText;
+                const dateB = b.querySelector('.khodro-date').innerText;
+                
+                // تبدیل تاریخ‌ها به فرمت YYYY/MM/DD و مقایسه آن‌ها
+                const [yearA, monthA, dayA] = dateA.split('/').map(Number);
+                const [yearB, monthB, dayB] = dateB.split('/').map(Number);
+                
+                // مقایسه تاریخ‌ها
+                return new Date(yearA, monthA - 1, dayA) - new Date(yearB, monthB - 1, dayB);
+            });
+
+            // اضافه کردن دوباره عناصر مرتب‌شده به لیست
+            khodros.forEach(khodro => khodroList.appendChild(khodro));
+        }
+
+        // اجرای تابع مرتب‌سازی هنگام بارگذاری صفحه
+        sortKhodroByDate();
+         
+        function deleteKhodro(khodroId) {
+            if (confirm('آیا از حذف این تنخواه مطمئن هستید؟')) {
+                fetch(`/delete_khodro/?id=${khodroId}`, {
+                    method: 'GET',
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert('تنخواه حذف شد!');
+                        location.reload();
+                    } else {
+                        alert('خطا در حذف تنخواه.');
+                    }
+                });
+            }
+        }
+
+    
+        function editKhodro(id, kilometer, amount, description) {
+            const newkilometer = prompt('کیلومتر جدید:', kilometer);
+            const newAmount = prompt('مبلغ جدید:', amount);
+            const newDescription = prompt('شرح سرویس جدید:', description);
+
+            if (newkilometer && newAmount && newDescription) {
+                fetch(`/edit_khodro_details/?id=${id}&kilometer=${newkilometer}&amount=${newAmount}&description=${newDescription}`, {
+                    method: 'GET',
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert('ویرایش با موفقیت انجام شد!');
+                        location.reload();
+                    } else {
+                        alert('خطا در ویرایش: ' + data.message);
+                    }
+                });
+            } else {
+                alert('لطفاً تمام فیلدها را پر کنید.');
+            }
+        }
+    </script>
+</body>
+</html>
