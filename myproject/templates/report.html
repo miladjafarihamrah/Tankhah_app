@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header text-center">
+                    <h3>گزارش‌گیری</h3>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            {{ form.as_p }}
+                        </div>
+                        <div class="row mt-4">
+                            <div class="col-md-12 text-center">
+                                <h5>دریافت گزارش اکسل</h5>
+                                <button type="submit" name="report_type" value="mission" class="btn btn-primary m-2">
+                                    گزارش ماموریت‌ها
+                                </button>
+                                <button type="submit" name="report_type" value="expense" class="btn btn-success m-2">
+                                    گزارش تنخواه‌ها
+                                </button>
+                                <button type="submit" name="report_type" value="khodro" class="btn btn-info m-2">
+                                    گزارش هزینه‌های خودرو
+                                </button>
+                            </div>
+                        </div>
+                        <div class="row mt-4">
+                            <div class="col-md-12 text-center">
+                                <h5>دریافت گزارش PDF</h5>
+                                <button type="submit" name="report_type" value="mission_pdf" class="btn btn-outline-primary m-2">
+                                    گزارش ماموریت‌ها
+                                </button>
+                                <button type="submit" name="report_type" value="expense_pdf" class="btn btn-outline-success m-2">
+                                    گزارش تنخواه‌ها
+                                </button>
+                                <button type="submit" name="report_type" value="khodro_pdf" class="btn btn-outline-info m-2">
+                                    گزارش هزینه‌های خودرو
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

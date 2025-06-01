@@ -215,7 +215,22 @@
         button:nth-child(2):hover i {
             color: white; /* تغییر رنگ آیکون سطل اشغال به سفید در هاور */
         }
+        /* استایل برای ماموریت‌های تعطیل */
+        li.holiday {
+            background-color: #098309 !important; /* رنگ خاکستری برای تعطیل */
+            border-left: 4px solid #dc3545; /* خط قرمز در سمت چپ */
+        }
+
+        li.holiday:hover {
+            background-color: #5a6268 !important; /* رنگ تیره‌تر در حالت هاور */
+        }
+
+         /* استایل برای متن ماموریت‌های تعطیل */
+        li.holiday span {
+            color: #f8f9fa !important;
+        } 
     </style>
+
 </head>
 <body>
 
@@ -232,6 +247,9 @@
             <li id="mission-{{ mission.id }}">
                 <span class="mission-date">{{ mission.date }}</span>
                 <span id="factory-{{ mission.id }}" class="factory">{{ mission.factory }}</span>
+                <span class="mission-type">
+                    {{ mission.get_mission_type_display }}
+                  </span>
 
                 <!-- فیلد ورودی ویرایش (مخفی در ابتدا) -->
                 <input type="text" id="edit-factory-{{ mission.id }}" value="{{ mission.factory }}" style="display: none;">
@@ -365,7 +383,30 @@
             return document.cookie.split('; ')
                 .find(row => row.startsWith('csrftoken='))?.split('=')[1];
         }
+        // بعد از بارگذاری صفحه
+        document.addEventListener('DOMContentLoaded', function() {
+        // پیدا کردن تمام ماموریت‌های تعطیل
+            const missions = document.querySelectorAll('#missionList li');
+    
+            missions.forEach(mission => {
+                const typeElement = mission.querySelector('.mission-type');
+                if (typeElement && typeElement.textContent.trim() === 'تعطیل') {
+                   mission.classList.add('holiday');
+            
+                // همچنین می‌توانید آیکون‌ها را هم تغییر دهید
+                    const icons = mission.querySelectorAll('button i');
+                    icons.forEach(icon => {
+                        icon.style.color = '#f8f9fa'; // رنگ سفید برای آیکون‌ها
+                    });
+               }
+            });
+    
+    // بقیه کدهای شما...
+    sortMissionsByDate();
+    updateMonthTitle();
+});
     </script>
+    
 
 </body>
 </html>

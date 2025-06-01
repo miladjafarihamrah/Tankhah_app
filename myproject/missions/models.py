@@ -6,9 +6,26 @@ class Mission(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     date = models.CharField(max_length=10)  # تاریخ شمسی
     factory = models.CharField(max_length=100)  # کارخانه
+    mission_type = models.CharField(
+        choices=[
+            ('normal', ''),
+            ('half', ' اصالت'),
+            ('holiday', ' تعطیل')
+        ],
+        default='normal',
+        max_length=10
+    )
+    mission_units = models.FloatField(editable=False, default=1)  # مقدار پیش‌فرض
 
-    def __str__(self):
-        return f"{self.date} - {self.factory}"
+    def save(self, *args, **kwargs):
+        """ هنگام ذخیره، مقدار `mission_units` را تنظیم کن """
+        if self.mission_type == 'holiday':
+            self.mission_units = 2  # تعطیل → ۲ واحد
+        elif self.mission_type == 'half':
+            self.mission_units = 0.5  # اصالت → ۰.۵ واحد
+        else:
+            self.mission_units = 1  # عادی → ۱ واحد
+        super().save(*args, **kwargs)
 
 class Expense(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)

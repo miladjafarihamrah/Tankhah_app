@@ -25,6 +25,16 @@ class MissionForm(forms.ModelForm):
     class Meta:
         model = Mission
         fields = ['date', 'factory']
+        mission_type = forms.ChoiceField(
+        label='نوع مأموریت',
+        choices=[
+            ('normal', ' عادی'), 
+            ('half', ' اصالت'), 
+            ('holiday', ' تعطیل')
+        ],
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        initial='normal'  # مقدار پیش‌فرض ماموریت عادی
+    )
 
     date = forms.CharField(
         label='تاریخ',
@@ -34,6 +44,34 @@ class MissionForm(forms.ModelForm):
             'placeholder': 'تاریخ شمسی نمونه 1403/10/10'
         }),
     )
+
+    
+
+    factory = forms.CharField(
+        label='کارخانه',
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'کارخانه و محل ماموریت را وارد کنید'}),
+    )
+
+    def clean_date(self):
+        date = self.cleaned_data.get('date')
+
+        # بررسی ماه و روز و تبدیل به دو رقمی اگر یک رقمی باشند
+        date_parts = date.split('/')
+        if len(date_parts) == 3:
+            year, month, day = date_parts
+            if len(month) == 1:  # اگر ماه تک رقمی است
+                month = '0' + month  # اضافه کردن صفر به ماه
+            if len(day) == 1:  # اگر روز تک رقمی است
+                day = '0' + day  # اضافه کردن صفر به روز
+            date = f"{year}/{month}/{day}"  # تاریخ اصلاح‌شده
+
+        # اعتبارسنجی تاریخ شمسی
+        try:
+            jdatetime.datetime.strptime(date, '%Y/%m/%d')  # اعتبارسنجی تاریخ شمسی
+        except ValueError:
+            raise forms.ValidationError("فرمت تاریخ وارد شده صحیح نیست.")
+        
+        return date
 
     
 
@@ -83,9 +121,9 @@ class ExpenseForm(forms.ModelForm):
         if not self.is_bound:  # فقط اگر فرم با داده پر نشده
             self.fields['date'].initial = jdatetime.datetime.now().strftime('%Y/%m/%d')
 
-    amount = forms.IntegerField(
+    amount = forms.CharField(
         label='مبلغ(ریال)',
-        widget=forms.NumberInput(attrs={'type': 'number', 'class': 'form-control', 'placeholder': 'لطفا مبلغ را وارد کنید'}),
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'لطفا مبلغ را وارد کنید'}),
     )
 
     description = forms.CharField(
@@ -121,9 +159,13 @@ class ExpenseForm(forms.ModelForm):
 
     def clean_amount(self):
         amount = self.cleaned_data.get('amount')
-        if amount <= 0:
-            raise forms.ValidationError("مبلغ باید بزرگ‌تر از صفر باشد.")
-        return amount
+        try:
+            amount = int(amount)
+            if amount <= 0:
+                raise forms.ValidationError("مبلغ باید بزرگ‌تر از صفر باشد.")
+            return amount
+        except (ValueError, TypeError):
+            raise forms.ValidationError("لطفاً یک عدد صحیح وارد کنید.")
 
 import jdatetime
 from django import forms
@@ -235,9 +277,9 @@ class KhodroForm(forms.ModelForm):
             'id': 'datepicker'
         }),
     )
-    amount = forms.IntegerField(
+    amount = forms.CharField(
         label='مبلغ(ریال)',
-        widget=forms.NumberInput(attrs={'type': 'number', 'class': 'form-control', 'placeholder': 'لطفا مبلغ را وارد کنید'}),
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'لطفا مبلغ را وارد کنید', 'inputmode': 'numeric'}),
     )
 
     kilometer = forms.IntegerField(
@@ -249,6 +291,16 @@ class KhodroForm(forms.ModelForm):
         label='شرح سرویس',
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'جزئیات سرویس را وارد کنید'}),
     )
+
+    def clean_amount(self):
+        amount = self.cleaned_data.get('amount')
+        try:
+            amount = int(amount)
+            if amount <= 0:
+                raise forms.ValidationError("مبلغ باید بزرگ‌تر از صفر باشد.")
+            return amount
+        except (ValueError, TypeError):
+            raise forms.ValidationError("لطفاً یک عدد صحیح وارد کنید.")
 
 
 

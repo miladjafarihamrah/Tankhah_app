@@ -28,6 +28,7 @@ urlpatterns = [
     path('delete_mission/<int:mission_id>/', views.delete_mission, name='delete_mission'),
     path('add_expense/', views.add_expense, name='add_expense'),
     path('generate_report/', views.generate_report, name='generate_report'),
+    path('generate_pdf_report/', views.generate_pdf_report, name='generate_pdf_report'),
     path('delete_mission/', views.delete_mission, name='delete_mission'),
     path('edit_expense/', views.edit_expense, name='edit_expense'),
     path('delete_expense/', views.delete_expense, name='delete_expense'),

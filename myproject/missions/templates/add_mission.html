@@ -121,6 +121,14 @@
                 {{ form.factory }}
                 {{ form.factory.errors }}
             </div>
+            <div class="mb-3">
+                <label for="missionType">نوع مأموریت:</label>
+                <select name="mission_type" id="missionType" class="form-control">
+                    <option value="normal" selected> عادی</option>
+                    <option value="half"> اصالت</option>
+                    <option value="holiday"> تعطیل</option>
+                </select>
+            </div>
             <button type="submit">ثبت</button>
         </form>
     </div>

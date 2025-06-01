@@ -245,25 +245,43 @@
         </script>
                 
         <script>
-            // تبدیل مقدار عددی مبلغ به حروف
             document.addEventListener("DOMContentLoaded", function () {
                 let amountInput = document.querySelector("[name='amount']");
+                let form = document.querySelector("form");
                 
                 if (amountInput) {
                     amountInput.setAttribute("id", "amount");
-                    amountInput.addEventListener("input", convertToWords);
+                    amountInput.addEventListener("input", function(e) {
+                        // حذف همه کاراکترهای غیر عددی
+                        let value = this.value.replace(/[^0-9]/g, '');
+                        
+                        // محدودیت: حداکثر 12 رقم
+                        value = value.substring(0, 12);
+                        
+                        // اضافه کردن کاما
+                        if (value) {
+                            this.value = Number(value).toLocaleString();
+                        }
+                        
+                        // تبدیل به حروف
+                        convertToWords(value);
+                    });
+                }
+
+                // حذف کاما قبل از ارسال فرم
+                if (form) {
+                    form.addEventListener('submit', function(e) {
+                        if (amountInput) {
+                            amountInput.value = amountInput.value.replace(/,/g, '');
+                        }
+                    });
                 }
             });
         
-            function convertToWords() {
-                let amountInput = document.getElementById("amount");
+            function convertToWords(amountValue) {
                 let wordOutput = document.getElementById("wordOutput");
                 
-                if (!amountInput || !wordOutput) return;
-                
-                // محدودیت: حداکثر 9 رقم (تا 999 میلیون تومان)
-                let amountValue = amountInput.value.replace(/[^0-9]/g, '').substring(0, 9);
-                amountInput.value = amountValue; // اعمال محدودیت روی ورودی
+                if (!wordOutput) return;
                 
                 if (!amountValue || amountValue === '0') {
                     wordOutput.innerText = "";
