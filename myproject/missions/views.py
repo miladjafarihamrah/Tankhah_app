@@ -996,10 +996,10 @@ def generate_pdf_report(request):
             styles = getSampleStyleSheet()
             styles.add(ParagraphStyle(name='RTL',
                                     fontName='Vazir',
-                                    fontSize=12,
+                                    fontSize=8,
                                     alignment=1,  # وسط چین
                                     textColor=colors.black,
-                                    leading=16))  # فاصله بین خطوط
+                                    leading=6))  # فاصله بین خطوط
 
             # آماده‌سازی داده‌ها برای جدول
             table_data = []
@@ -1089,7 +1089,7 @@ def generate_pdf_report(request):
                 total_style = ParagraphStyle(
                     'Total',
                     parent=styles['RTL'],
-                    fontSize=14,
+                    fontSize=10,
                     spaceBefore=20
                 )
                 total_text = get_display(reshape(f"جمع کل: {convert_to_persian_numbers(total_amount)} ریال"))
