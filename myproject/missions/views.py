@@ -302,8 +302,22 @@ def generate_report(request):
         return redirect('login')
     
     if request.method == 'POST':
+        print("***********************************")
+
         form = ReportForm(request.POST)
         if form.is_valid():
+            report_type = request.POST.get('report_type')
+            REPORT_TYPES = ('mission', 'expense', 'khodro', 'mission_pdf', 'expense_pdf', 'khodro_pdf')
+            if report_type not in REPORT_TYPES:
+                messages.error(request, 'نوع گزارش نامعتبر است.')
+                return redirect('home')
+            
+            # اگر نوع گزارش PDF است، مستقیماً view generate_pdf_report را فراخوانی کن
+            if report_type.endswith('_pdf'):
+                # فراخوانی مستقیم تابع generate_pdf_report
+                return generate_pdf_report(request)
+            
+            # برای گزارش‌های سالیانه (غیر PDF)
             try:
                 year = int(form.cleaned_data['year'])
                 if year < 1400 or year > 1450:
@@ -311,12 +325,6 @@ def generate_report(request):
                     return redirect('home')
             except (ValueError, KeyError):
                 messages.error(request, 'خطا در پردازش داده‌ها.')
-                return redirect('home')
-
-            report_type = request.POST.get('report_type')
-            REPORT_TYPES = ('mission', 'expense', 'khodro')
-            if report_type not in REPORT_TYPES:
-                messages.error(request, 'نوع گزارش نامعتبر است.')
                 return redirect('home')
 
             report_config = {
@@ -744,10 +752,13 @@ from django.conf import settings
 FONT_PATH = os.path.join(settings.BASE_DIR, 'static', 'fonts', 'Vazir.ttf')
 
 def generate_pdf_report(request):
+    print("########################################################")
+
     if not request.user.is_authenticated:
         return redirect('login')
     
     if request.method == 'POST':
+        print("########################################################")
         form = ReportForm(request.POST)
         if form.is_valid():
             try:

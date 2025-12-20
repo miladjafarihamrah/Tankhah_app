@@ -161,7 +161,7 @@
     </div>
 
     <h2>گزارش گیری</h2>
-    <form method="post">
+    <form method="post" action="{% url 'generate_report' %}">
         {% csrf_token %}
         {{ form.as_p }}
         <h3 style="color: white; text-align: center; margin: 20px 0 15px;">گزارش ماهیانه</h3>
