@@ -293,16 +293,11 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, Border, Side, Alignment, PatternFill
 from datetime import datetime
 from .forms import ReportForm
-from .models import Mission, Expense
 from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
 from openpyxl.workbook import Workbook
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from django.http import HttpResponse
-from datetime import datetime
+from .models import Mission, Expense, Khodro
 
 def generate_report(request):
-    # بررسی احراز هویت کاربر
     if not request.user.is_authenticated:
         return redirect('login')
     
@@ -310,156 +305,105 @@ def generate_report(request):
         form = ReportForm(request.POST)
         if form.is_valid():
             try:
-                # دریافت و اعتبارسنجی ماه و سال
-                month = int(form.cleaned_data['month'])
                 year = int(form.cleaned_data['year'])
-                
-                if not (1 <= month <= 12):
-                    messages.error(request, 'ماه وارد شده نامعتبر است.')
-                    return redirect('home')
-                
-                # اطمینان از معتبر بودن سال
                 if year < 1400 or year > 1450:
                     messages.error(request, 'سال وارد شده نامعتبر است.')
                     return redirect('home')
-
             except (ValueError, KeyError):
                 messages.error(request, 'خطا در پردازش داده‌ها.')
                 return redirect('home')
 
-            # دریافت نوع گزارش
             report_type = request.POST.get('report_type')
-            REPORT_TYPES = ('mission', 'expense', 'khodro', 'mission_pdf', 'expense_pdf', 'khodro_pdf')
-
-            # بررسی معتبر بودن نوع گزارش
+            REPORT_TYPES = ('mission', 'expense', 'khodro')
             if report_type not in REPORT_TYPES:
                 messages.error(request, 'نوع گزارش نامعتبر است.')
                 return redirect('home')
 
-            # اگر نوع گزارش PDF است، به تابع مربوطه هدایت کنیم
-            if report_type.endswith('_pdf'):
-                return generate_pdf_report(request)
-
-            # تعیین نوع مدل
-            model_type = report_type
-
-            # تنظیمات مربوط به نوع گزارش
             report_config = {
                 'mission': {
                     'model': Mission,
-                    'output_name': f"m_{request.user.username}_{year}_{month}.xlsx",
+                    'output_name': f"annual_mission_{request.user.username}_{year}.xlsx",
                     'header': ['ردیف', 'تاریخ', 'کارخانه']
                 },
                 'expense': {
                     'model': Expense,
-                    'output_name': f"t_{request.user.username}_{year}_{month}.xlsx",
+                    'output_name': f"annual_expense_{request.user.username}_{year}.xlsx",
                     'header': ['ردیف', 'تاریخ', 'توضیحات', 'مبلغ(ریال)', 'کارخانه']
                 },
                 'khodro': {
                     'model': Khodro,
-                    'output_name': f"k_{request.user.username}_{year}_{month}.xlsx",
+                    'output_name': f"annual_khodro_{request.user.username}_{year}.xlsx",
                     'header': ['ردیف', 'تاریخ', 'کیلومتر', 'شرح سرویس', 'مبلغ(ریال)']
                 }
             }
 
-            config = report_config[model_type]
+            config = report_config[report_type]
             model = config['model']
             output_name = config['output_name']
             header = config['header']
 
-            # دریافت داده‌ها از دیتابیس
+            # فیلتر داده‌ها و مرتب‌سازی بر اساس تاریخ
             data = model.objects.filter(user=request.user)
+            data_list = []
+
+            for item in data:
+                try:
+                    item_year, item_month, item_day = map(int, item.date.split('/'))
+                    if item_year == year:
+                        data_list.append((item_year, item_month, item_day, item))
+                except:
+                    continue  # رد کردن رکوردهای تاریخ نامعتبر
+
+            # مرتب‌سازی بر اساس سال، ماه، روز
+            data_list.sort(key=lambda x: (x[0], x[1], x[2]))
+
             filtered_data = []
-            total_amount = 0  # جمع کل مبالغ
 
-            if model_type == 'mission':
-                # جدا کردن ماموریت‌های عادی و تعطیل
-                normal_missions = []
-                for item in data:
-                    item_date = item.date
-                    item_year, item_month, item_day = map(int, item_date.split('/'))
-                    if item_month == month and item_year == year and item.mission_type != 'half':
-                        normal_missions.append({
-                            'factory': item.factory,
-                            'date': item.date,
-                            'type': item.mission_type
-                        })
-
-                # مرتب‌سازی ماموریت‌های عادی و تعطیل بر اساس تاریخ
-                normal_missions.sort(key=lambda x: x['date'])
-
-                # اضافه کردن ماموریت‌های عادی و تعطیل به جدول
-                for mission in normal_missions:
-                    filtered_data.append([mission['factory'], convert_to_persian_numbers(mission['date'])])
-                    if mission['type'] == 'holiday':
-                        filtered_data.append([f"{mission['factory']} (تعطیل)", convert_to_persian_numbers(mission['date'])])
-
-                # جدا کردن و مرتب‌سازی ماموریت‌های اصالت
-                asalat_missions = []
-                for item in data:
-                    item_date = item.date
-                    item_year, item_month, item_day = map(int, item_date.split('/'))
-                    if item_month == month and item_year == year and item.mission_type == 'half':
-                        asalat_missions.append({
-                            'factory': item.factory,
-                            'date': item.date
-                        })
-
-                # مرتب‌سازی ماموریت‌های اصالت بر اساس تاریخ
-                asalat_missions.sort(key=lambda x: x['date'])
-
-                # اضافه کردن عنوان اصالت فقط اگر ماموریت اصالت وجود داشته باشد
-                if asalat_missions:
-                    filtered_data.append(["", "اصالت"])
-
-                # اضافه کردن ماموریت‌های اصالت به جدول
-                asalat_count = 1
-                for mission in asalat_missions:
-                    filtered_data.append([mission['factory'], convert_to_persian_numbers(mission['date'])])
-                    asalat_count += 1
+            if report_type == 'mission':
+                mission_count = 0
+                for _, _, _, item in data_list:
+                    filtered_data.append([item.date, item.factory])
+                    mission_count += 1
+                filtered_data.append(["", f"جمع ماموریت‌ها: {mission_count}"])
+            
             else:
-                # برای گزارش‌های تنخواه و خودرو
-                temp_data = []
-                for item in data:
-                    item_date = item.date
-                    item_year, item_month, item_day = map(int, item_date.split('/'))
-                    if item_month == month and item_year == year:
-                        if model_type == 'expense':
-                            temp_data.append({
-                                'date': item.date,
-                                'factory': item.factory,
-                                'description': item.description,
-                                'amount': item.amount
-                            })
-                            total_amount += item.amount
-                        elif model_type == 'khodro':
-                            temp_data.append({
-                                'date': item.date,
-                                'amount': item.amount,
-                                'description': item.description,
-                                'kilometer': item.kilometer
-                            })
-                            total_amount += item.amount
+                total_amount = 0
+                monthly_total = 0
+                previous_month = None
 
-                # مرتب‌سازی بر اساس تاریخ
-                temp_data.sort(key=lambda x: x['date'])
+                for _, item_month, _, item in data_list:
+                    if previous_month is None:
+                        previous_month = item_month
 
-                # اضافه کردن داده‌های مرتب شده به filtered_data
-                for index, item in enumerate(temp_data, 1):
-                    if model_type == 'expense':
+                    # اگر ماه تغییر کرد، جمع ماه قبل را اضافه کن
+                    if item_month != previous_month:
+                        filtered_data.append(["", "", f"جمع ماه {previous_month}:", convert_to_persian_numbers(monthly_total)])
+                        monthly_total = 0
+                        previous_month = item_month
+
+                    if report_type == 'expense':
                         filtered_data.append([
-                            item['factory'],
-                            convert_to_persian_numbers(item['amount']),
-                            item['description'],
-                            convert_to_persian_numbers(item['date'])
+                            item.date,
+                            item.description,
+                            convert_to_persian_numbers(item.amount),
+                            item.factory
                         ])
-                    elif model_type == 'khodro':
+                        monthly_total += item.amount
+                        total_amount += item.amount
+                    elif report_type == 'khodro':
                         filtered_data.append([
-                            convert_to_persian_numbers(item['amount']),
-                            item['description'],
-                            convert_to_persian_numbers(item['kilometer']),
-                            convert_to_persian_numbers(item['date'])
+                            item.date,
+                            item.description,
+                            convert_to_persian_numbers(item.kilometer),
+                            convert_to_persian_numbers(item.amount)
                         ])
+                        monthly_total += item.amount
+                        total_amount += item.amount
+
+                # جمع ماه آخر
+                filtered_data.append(["", "", f"جمع ماه {previous_month}:", convert_to_persian_numbers(monthly_total)])
+                # جمع کل
+                filtered_data.append(["", "", "جمع کل(ریال):", convert_to_persian_numbers(total_amount)])
 
             # ایجاد فایل اکسل
             wb = Workbook()
@@ -467,125 +411,95 @@ def generate_report(request):
             ws.sheet_view.rightToLeft = True
             ws.append(header)
 
-            # تنظیم فونت کلی اکسل به "B Nazanin"
-            default_font = Font(name="B Nazanin", size=14)
-            
-            # تنظیم استایل برای هدرها
-            header_font = Font(bold=True, color="FFFFFF", size=14, name="B Nazanin")  # فونت پررنگ، رنگ سفید و سایز ۱۴
-            header_fill = PatternFill(start_color="4F81BD", end_color="4F81BD", fill_type="solid")  # رنگ پس‌زمینه آبی
-            border = Border(
-                left=Side(style='thin'),
-                right=Side(style='thin'),
-                top=Side(style='thin'),
-                bottom=Side(style='thin')
-            )  # حاشیه نازک برای سلول‌ها
-            alignment = Alignment(horizontal='center', vertical='center')  # تراز وسط
+            for index, row in enumerate(filtered_data, 1):
+                ws.append([index] + row)
 
-            # اعمال استایل به هدرها
+            # استایل‌دهی هدر
+            header_font = Font(bold=True, color="FFFFFF", size=14, name="B Nazanin")
+            header_fill = PatternFill(start_color="4F81BD", end_color="4F81BD", fill_type="solid")
+            border = Border(left=Side(style='thin'), right=Side(style='thin'),
+                            top=Side(style='thin'), bottom=Side(style='thin'))
+            alignment = Alignment(horizontal='center', vertical='center')
+
             for cell in ws[1]:
                 cell.font = header_font
                 cell.fill = header_fill
                 cell.border = border
                 cell.alignment = alignment
 
-            # اضافه کردن داده‌ها به فایل اکسل
-            for index, row in enumerate(filtered_data, 1):
-                rtl_row = []
-                for item in row:
-                    if item == "اصالت":
-                        # استایل مخصوص برای سطر اصالت
-                        asalat_style = ParagraphStyle(
-                            'AsalatStyle',
-                            parent=styles['RTL'],
-                            fontSize=14,
-                            textColor=colors.darkblue,
-                            fontName='Vazir'
-                        )
-                        rtl_row.append(Paragraph(get_display(reshape(str(item))), asalat_style))
-                    else:
-                        rtl_row.append(Paragraph(get_display(reshape(str(item))), styles['RTL']))
-                # اضافه کردن شماره ردیف
-                rtl_row.append(Paragraph(get_display(reshape(str(index))), styles['RTL']))
-                table_data.append(rtl_row)
-
-            # اضافه کردن سطر جمع کل به جدول
-            if model_type in ['expense', 'khodro'] and filtered_data:
-                if model_type == 'expense':
-                    ws.append(['', '', 'جمع کل(ریال)', total_amount, ''])
-                else:  # khodro
-                    ws.append(['', '', '', 'جمع کل(ریال):', f"{total_amount:,}"])
-
-            # اعمال استایل به داده‌ها
-            data_font = Font(size=14, name="B Nazanin")  # سایز فونت ۱۴
-            for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=1, max_col=len(header)):
+            # استایل‌دهی داده‌ها
+            data_font = Font(size=12, name="B Nazanin")
+            for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=1, max_col=len(header)+1):
                 for cell in row:
                     cell.font = data_font
                     cell.border = border
                     cell.alignment = alignment
 
-            # فرمت سه رقم سه رقم جدا کردن اعداد
+            # فرمت اعداد برای مالی
             if report_type in ['expense', 'khodro']:
-                amount_column = 4 if report_type == 'expense' else 5
+                amount_column = 4
                 for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=amount_column, max_col=amount_column):
                     for cell in row:
-                        if isinstance(cell.value, (int, float)):
+                        try:
+                            cell.value = int(str(cell.value).replace(',', ''))
                             cell.number_format = '#,##0'
+                        except:
+                            pass
 
-            # اضافه کردن جای امضا
-            ws.append([])  # سطر خالی
-            ws.append([])
-            ws.append([])
-            if report_type == "expense":
-                ws.append(["", request.user.first_name, "کنترل کننده", "مدیر عامل"])
-                ws.append(["", request.user.last_name])
-            else:
-                ws.append([request.user.first_name, "کنترل کننده", "مدیر عامل"])
-                ws.append([request.user.last_name])
-
-            # تنظیم خودکار اندازه ستون‌ها
+            # تنظیم عرض ستون‌ها به صورت خودکار
             for col in ws.columns:
                 max_length = 0
-                column = col[0].column_letter  # نام ستون (مثلاً A, B, C)
+                column = col[0].column_letter
                 for cell in col:
                     try:
-                        if len(str(cell.value)) > max_length:
-                            max_length = len(str(cell.value))
+                        cell_length = len(str(cell.value))
+                        if cell_length > max_length:
+                            max_length = cell_length
                     except:
                         pass
-                adjusted_width = (max_length + 4) * 1.2  # محاسبه عرض ستون
-                ws.column_dimensions[column].width = adjusted_width
+                ws.column_dimensions[column].width = max_length + 2
 
-            # تنظیمات صفحه برای پرینت
-            ws.page_setup.orientation = ws.ORIENTATION_PORTRAIT  # جهت صفحه به صورت عمودی
-            ws.page_setup.paperSize = ws.PAPERSIZE_A4  # اندازه کاغذ A4
-            ws.page_setup.fitToWidth = 1  # تنظیم عرض صفحه برای پرینت
-            ws.page_setup.fitToHeight = 0  # عدم تنظیم ارتفاع صفحه
-            ws.page_setup.horizontalCentered = True  # فعال کردن گزینه Horizontally در حاشیه‌ها
+            # رنگ پس‌زمینه ماه‌ها متناوب برای expense و khodro
+            if report_type in ['expense', 'khodro']:
+                month_colors = ["DDDDDD", "FFFFFF"]  # روشن و تیره
+                previous_month = None
+                color_index = 0
+                row_offset = 2  # شروع از ردیف 2 چون ردیف اول هدر است
+                data_idx = 0  # برای دسترسی به data_list
 
-            # تنظیم حاشیه‌ها
-            ws.page_margins.left = 0.5
-            ws.page_margins.right = 0.5
-            ws.page_margins.top = 0.5
-            ws.page_margins.bottom = 0.5
-            ws.page_margins.header = 0.3
-            ws.page_margins.footer = 0.3
+                for row_idx in range(2, ws.max_row + 1):
+                    cell_value = ws.cell(row=row_idx, column=2).value
+                    if cell_value and '/' in str(cell_value):
+                        # استخراج ماه از تاریخ
+                        item_month = int(str(cell_value).split('/')[1])
+                        if previous_month != item_month:
+                            color_index = 1 - color_index
+                            previous_month = item_month
 
-         # تنظیم هدر و فوتر
-            ws.oddHeader.center.text = "گزارش ماهانه ماموریت" if report_type == "mission" else "گزارش ماهانه تنخواه"
-            ws.oddFooter.center.text = "صفحه &P از &N"  # فوتر وسط صفحه (شماره صفحه)
-            # تنظیم هدرهای HTTP برای دانلود فایل
+                    # اعمال رنگ به کل ردیف
+                    for col_idx in range(1, len(header)+2):
+                        cell = ws.cell(row=row_idx, column=col_idx)
+                        cell.fill = PatternFill(start_color=month_colors[color_index],
+                                                end_color=month_colors[color_index],
+                                                fill_type='solid')
+
+            # ارسال فایل به کاربر
             response = HttpResponse(
                 content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             )
             response['Content-Disposition'] = f'attachment; filename="{output_name}"'
-
-            # ذخیره فایل در پاسخ
             wb.save(response)
             return response
-        
+
     else:
         form = ReportForm()
+
     return render(request, 'report.html', {'form': form})
+
+
+
+
+
 
 def update_balance(request):
     if not request.user.is_authenticated:
@@ -866,19 +780,19 @@ def generate_pdf_report(request):
                     'model': Mission,
                     'output_name': f"m_{request.user.username}_{year}_{month}.pdf",
                     'title': 'گزارش ماموریت‌ها',
-                    'headers': ['کارخانه', 'تاریخ', 'ردیف']  # ترتیب از راست به چپ
+                    'headers': ['کارخانه', 'تاریخ', 'ردیف']
                 },
                 'expense': {
                     'model': Expense,
                     'output_name': f"t_{request.user.username}_{year}_{month}.pdf",
                     'title': 'گزارش تنخواه‌ها',
-                    'headers': ['کارخانه', 'مبلغ(ریال)', 'توضیحات', 'تاریخ', 'ردیف']  # ترتیب از راست به چپ
+                    'headers': ['کارخانه', 'مبلغ(ریال)', 'توضیحات', 'تاریخ', 'ردیف']
                 },
                 'khodro': {
                     'model': Khodro,
                     'output_name': f"k_{request.user.username}_{year}_{month}.pdf",
                     'title': 'گزارش هزینه‌های خودرو',
-                    'headers': ['مبلغ(ریال)', 'شرح سرویس', 'کیلومتر', 'تاریخ', 'ردیف']  # ترتیب از راست به چپ
+                    'headers': ['مبلغ(ریال)', 'شرح سرویس', 'کیلومتر', 'تاریخ', 'ردیف']
                 }
             }
 
@@ -894,156 +808,89 @@ def generate_pdf_report(request):
             total_amount = 0
 
             if model_type == 'mission':
-                # جدا کردن ماموریت‌های عادی و تعطیل
                 normal_missions = []
                 for item in data:
-                    item_date = item.date
-                    item_year, item_month, item_day = map(int, item_date.split('/'))
+                    item_year, item_month, _ = map(int, item.date.split('/'))
                     if item_month == month and item_year == year and item.mission_type != 'half':
-                        normal_missions.append({
-                            'factory': item.factory,
-                            'date': item.date,
-                            'type': item.mission_type
-                        })
-
-                # مرتب‌سازی ماموریت‌های عادی و تعطیل بر اساس تاریخ
+                        normal_missions.append({'factory': item.factory, 'date': item.date, 'type': item.mission_type})
                 normal_missions.sort(key=lambda x: x['date'])
-
-                # اضافه کردن ماموریت‌های عادی و تعطیل به جدول
                 for mission in normal_missions:
                     filtered_data.append([mission['factory'], convert_to_persian_numbers(mission['date'])])
                     if mission['type'] == 'holiday':
                         filtered_data.append([f"{mission['factory']} (تعطیل)", convert_to_persian_numbers(mission['date'])])
 
-                # جدا کردن و مرتب‌سازی ماموریت‌های اصالت
                 asalat_missions = []
                 for item in data:
-                    item_date = item.date
-                    item_year, item_month, item_day = map(int, item_date.split('/'))
+                    item_year, item_month, _ = map(int, item.date.split('/'))
                     if item_month == month and item_year == year and item.mission_type == 'half':
-                        asalat_missions.append({
-                            'factory': item.factory,
-                            'date': item.date
-                        })
-
-                # مرتب‌سازی ماموریت‌های اصالت بر اساس تاریخ
+                        asalat_missions.append({'factory': item.factory, 'date': item.date})
                 asalat_missions.sort(key=lambda x: x['date'])
 
-                # اضافه کردن عنوان اصالت فقط اگر ماموریت اصالت وجود داشته باشد
                 if asalat_missions:
                     filtered_data.append(["", "اصالت"])
 
-                # اضافه کردن ماموریت‌های اصالت به جدول
-                asalat_count = 1
                 for mission in asalat_missions:
                     filtered_data.append([mission['factory'], convert_to_persian_numbers(mission['date'])])
-                    asalat_count += 1
             else:
-                # برای گزارش‌های تنخواه و خودرو
                 temp_data = []
                 for item in data:
-                    item_date = item.date
-                    item_year, item_month, item_day = map(int, item_date.split('/'))
+                    item_year, item_month, _ = map(int, item.date.split('/'))
                     if item_month == month and item_year == year:
                         if model_type == 'expense':
-                            temp_data.append({
-                                'date': item.date,
-                                'factory': item.factory,
-                                'description': item.description,
-                                'amount': item.amount
-                            })
+                            temp_data.append({'date': item.date, 'factory': item.factory, 'description': item.description, 'amount': item.amount})
                             total_amount += item.amount
                         elif model_type == 'khodro':
-                            temp_data.append({
-                                'date': item.date,
-                                'amount': item.amount,
-                                'description': item.description,
-                                'kilometer': item.kilometer
-                            })
+                            temp_data.append({'date': item.date, 'amount': item.amount, 'description': item.description, 'kilometer': item.kilometer})
                             total_amount += item.amount
-
-                # مرتب‌سازی بر اساس تاریخ
                 temp_data.sort(key=lambda x: x['date'])
-
-                # اضافه کردن داده‌های مرتب شده به filtered_data
                 for index, item in enumerate(temp_data, 1):
                     if model_type == 'expense':
-                        filtered_data.append([
-                            item['factory'],
-                            convert_to_persian_numbers(item['amount']),
-                            item['description'],
-                            convert_to_persian_numbers(item['date'])
-                        ])
+                        filtered_data.append([item['factory'], convert_to_persian_numbers(item['amount']), item['description'], convert_to_persian_numbers(item['date'])])
                     elif model_type == 'khodro':
-                        filtered_data.append([
-                            convert_to_persian_numbers(item['amount']),
-                            item['description'],
-                            convert_to_persian_numbers(item['kilometer']),
-                            convert_to_persian_numbers(item['date'])
-                        ])
+                        filtered_data.append([convert_to_persian_numbers(item['amount']), item['description'], convert_to_persian_numbers(item['kilometer']), convert_to_persian_numbers(item['date'])])
 
-            # ایجاد پاسخ HTTP
             response = HttpResponse(content_type='application/pdf')
             response['Content-Disposition'] = f'attachment; filename="{output_name}"'
-
-            # ایجاد PDF با استفاده از SimpleDocTemplate
             doc = SimpleDocTemplate(response, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
-            
-            # ثبت فونت
             pdfmetrics.registerFont(TTFont('Vazir', FONT_PATH))
 
-            # تعریف استایل‌ها
             styles = getSampleStyleSheet()
-            styles.add(ParagraphStyle(name='RTL',
-                                    fontName='Vazir',
-                                    fontSize=8,
-                                    alignment=1,  # وسط چین
-                                    textColor=colors.black,
-                                    leading=6))  # فاصله بین خطوط
+            styles.add(ParagraphStyle(name='RTL', fontName='Vazir', fontSize=8, alignment=1, textColor=colors.black, leading=6))
 
-            # آماده‌سازی داده‌ها برای جدول
             table_data = []
-            
-            # تبدیل عنوان‌ها به راست به چپ
             rtl_headers = [Paragraph(get_display(reshape(header)), styles['RTL']) for header in headers]
             table_data.append(rtl_headers)
 
-            # تبدیل داده‌ها به راست به چپ
             for index, row in enumerate(filtered_data, 1):
                 rtl_row = []
                 for item in row:
                     if item == "اصالت":
-                        # استایل مخصوص برای سطر اصالت
                         asalat_style = ParagraphStyle(
                             'AsalatStyle',
                             parent=styles['RTL'],
-                            fontSize=14,
+                            fontSize=8,
                             textColor=colors.darkblue,
+                            alignment=1,
                             fontName='Vazir'
                         )
                         rtl_row.append(Paragraph(get_display(reshape(str(item))), asalat_style))
                     else:
                         rtl_row.append(Paragraph(get_display(reshape(str(item))), styles['RTL']))
-                # اضافه کردن شماره ردیف
-                rtl_row.append(Paragraph(get_display(reshape(str(index))), styles['RTL']))
+                rtl_row.append(Paragraph(convert_to_persian_numbers(index), styles['RTL']))
                 table_data.append(rtl_row)
 
-            # ایجاد جدول
-            # تنظیم عرض ستون‌ها بر اساس نوع گزارش
             if model_type == 'mission':
-                col_widths = [150, 90, 40]  # [کارخانه، تاریخ، ردیف]
+                col_widths = [150, 90, 40]
             elif model_type == 'expense':
-                col_widths = [90, 90, 180, 90, 40]  # [کارخانه، مبلغ، توضیحات، تاریخ، ردیف]
+                col_widths = [90, 90, 180, 90, 40]
             elif model_type == 'khodro':
-                col_widths = [90, 180, 70, 90, 40]  # [مبلغ، شرح سرویس، کیلومتر، تاریخ، ردیف]
+                col_widths = [90, 180, 70, 90, 40]
 
             table = Table(table_data, colWidths=col_widths, repeatRows=1)
-            
-            # استایل جدول
             table.setStyle(TableStyle([
                 ('FONT', (0, 0), (-1, -1), 'Vazir'),
-                ('FONTSIZE', (0, 0), (-1, 0), 12),  # سایز فونت هدر
-                ('FONTSIZE', (0, 1), (-1, -1), 11),  # سایز فونت داده‌ها
+                ('FONTSIZE', (0, 0), (-1, 0), 12),
+                ('FONTSIZE', (0, 1), (-1, -1), 11),
                 ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
                 ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
@@ -1053,99 +900,71 @@ def generate_pdf_report(request):
                 ('RIGHTPADDING', (0, 0), (-1, -1), 6),
                 ('TOPPADDING', (0, 0), (-1, -1), 8),
                 ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
-                ('ALIGN', (-2, 1), (-2, -1), 'CENTER'),
-                ('ALIGN', (-1, 1), (-1, -1), 'CENTER'),
             ]))
 
-            # اضافه کردن استایل برای سطر اصالت
             for i, row in enumerate(table_data):
                 if isinstance(row[0], Paragraph) and row[0].text == "اصالت":
                     table.setStyle(TableStyle([
-                        ('BACKGROUND', (0, i), (-1, i), colors.lightgrey),
-                        ('FONT', (0, i), (-1, i), 'Vazir'),
-                        ('FONTSIZE', (0, i), (-1, i), 14),
-                        ('TEXTCOLOR', (0, i), (-1, i), colors.darkblue),
+                        ('BACKGROUND', (0, i), (-1, i), colors.darkgrey),
+                        ('TEXTCOLOR', (0, i), (-1, i), colors.whitesmoke),  # رنگ متن روشن
+                        ('FONTSIZE', (0, i), (-1, i), 14),      
                     ]))
                     break
 
-            # لیست المان‌های PDF
             elements = []
-
-            # اضافه کردن عنوان
-            title_style = ParagraphStyle(
-                'CustomTitle',
-                parent=styles['RTL'],
-                fontSize=16,
-                spaceAfter=30  # فاصله بعد از عنوان
-            )
+            title_style = ParagraphStyle('CustomTitle', parent=styles['RTL'], fontSize=16, spaceAfter=30)
             title_text = get_display(reshape(f"{title} - {year}/{month:02d}"))
             elements.append(Paragraph(title_text, title_style))
-
-            # اضافه کردن جدول
             elements.append(table)
 
-            # اضافه کردن جمع کل برای گزارش‌های مالی
             if model_type in ['expense', 'khodro'] and filtered_data:
-                total_style = ParagraphStyle(
-                    'Total',
-                    parent=styles['RTL'],
-                    fontSize=10,
-                    spaceBefore=20
-                )
+                total_style = ParagraphStyle('Total', parent=styles['RTL'], fontSize=10, spaceBefore=20)
                 total_text = get_display(reshape(f"جمع کل: {convert_to_persian_numbers(total_amount)} ریال"))
                 elements.append(Paragraph(total_text, total_style))
 
-            # اضافه کردن یک خط خالی برای فاصله بیشتر
             elements.append(Paragraph("<br/><br/><br/>", styles['RTL']))
 
-            # اضافه کردن محل‌های امضا با استفاده از جدول
-            signature_style = ParagraphStyle(
-                'Signature',
-                parent=styles['RTL'],
-                fontSize=12,
-                spaceBefore=150  # فاصله قبل از امضاها
-            )
-
-            # ایجاد جدول برای امضاها
+            signature_style = ParagraphStyle('Signature', parent=styles['RTL'], fontSize=12, spaceBefore=150)
             signature_table_data = [[
                 Paragraph(get_display(reshape("مدیر عامل")), signature_style),
                 Paragraph(get_display(reshape("کنترل کننده")), signature_style),
                 Paragraph(get_display(reshape(f"{request.user.get_full_name()}")), signature_style)
             ]]
-            
             signature_table = Table(signature_table_data, colWidths=[180, 180, 180])
             signature_table.setStyle(TableStyle([
-                ('ALIGN', (0, 0), (0, 0), 'LEFT'),    # مدیر عامل - چپ چین
-                ('ALIGN', (1, 0), (1, 0), 'CENTER'),  # کنترل کننده - وسط چین
-                ('ALIGN', (2, 0), (2, 0), 'RIGHT'),   # نام کاربر - راست چین
+                ('ALIGN', (0, 0), (0, 0), 'LEFT'),
+                ('ALIGN', (1, 0), (1, 0), 'CENTER'),
+                ('ALIGN', (2, 0), (2, 0), 'RIGHT'),
                 ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
                 ('LEFTPADDING', (0, 0), (-1, -1), 0),
                 ('RIGHTPADDING', (0, 0), (-1, -1), 0),
                 ('TOPPADDING', (0, 0), (-1, -1), 0),
                 ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
             ]))
-            
             elements.append(signature_table)
 
-            # ساخت PDF
             doc.build(elements)
             return response
-        
     else:
         form = ReportForm()
     return render(request, 'report.html', {'form': form})
 
+
+
 def convert_to_persian_numbers(text):
-    """تبدیل اعداد انگلیسی به فارسی و اضافه کردن جداکننده سه رقمی"""
+    """اعداد انگلیسی به فارسی + جداکننده سه‌رقمی"""
     english_numbers = "0123456789"
     persian_numbers = "۰۱۲۳۴۵۶۷۸۹"
     translation_table = str.maketrans(english_numbers, persian_numbers)
     
-    # تبدیل به رشته و اضافه کردن جداکننده سه رقمی
     text = str(text)
     if text.isdigit():
         text = "{:,}".format(int(text))
-    
-    # تبدیل اعداد به فارسی
     return text.translate(translation_table)
 
+
+def convert_index_to_persian(index):
+    """شماره ردیف به فارسی بدون جداکننده"""
+    english_numbers = "0123456789"
+    persian_numbers = "۰۱۲۳۴۵۶۷۸۹"
+    return str(index).translate(str.maketrans(english_numbers, persian_numbers))

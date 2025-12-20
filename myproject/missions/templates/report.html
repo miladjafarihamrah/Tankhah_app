@@ -160,21 +160,21 @@
     </a>
     </div>
 
-    <h2>گزارش ماهانه</h2>
+    <h2>گزارش گیری</h2>
     <form method="post">
         {% csrf_token %}
         {{ form.as_p }}
-        <h3 style="color: white; text-align: center; margin-bottom: 15px;">دانلود گزارش اکسل</h3>
-        <button type="submit" name="report_type" value="mission">دانلود ماموریت‌ها</button>
-        <button type="submit" name="report_type" value="expense">دانلود تنخواه‌ها</button>
-        <button type="submit" name="report_type" value="khodro">دانلود گزارش خودرو</button>
-        
-        <h3 style="color: white; text-align: center; margin: 20px 0 15px;">دانلود گزارش PDF</h3>
+        <h3 style="color: white; text-align: center; margin: 20px 0 15px;">گزارش ماهیانه</h3>
         <button type="submit" name="report_type" value="mission_pdf" style="background: linear-gradient(145deg, #1a4731, #1a4731);">دانلود ماموریت‌ها</button>
         <button type="submit" name="report_type" value="expense_pdf" style="background: linear-gradient(145deg, #1a4731, #1a4731);">دانلود تنخواه‌ها</button>
-        <button type="submit" name="report_type" value="khodro_pdf" style="background: linear-gradient(145deg, #1a4731, #1a4731);">دانلود گزارش خودرو</button>
+        <button type="submit" name="report_type" value="khodro_pdf" style="background: linear-gradient(145deg, #1a4731, #1a4731);">دانلود خودرویی</button>
+        
+        <h3 style="color: white; text-align: center; margin-bottom: 15px;">گزارش سالیانه</h3>
+        
+        <button type="submit" name="report_type" value="expense">دانلود تنخواه‌ها</button>
+        <button type="submit" name="report_type" value="khodro">دانلود خودرویی</button>
     </form>
   
 </html>
 <link rel="manifest" href="{% static 'manifest.json' %}">
-<script src="{% static 'register-sw.js' %}"></script>
+<script src="{% static 'register-sw.js' %}"></script> 
