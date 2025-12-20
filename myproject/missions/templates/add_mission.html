@@ -91,10 +91,14 @@
             }
         }
     </style>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    {% comment %} <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/persian-date/dist/persian-date.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script> {% endcomment %}
+
+    <link type="text/css" rel="stylesheet" href="{% static 'css/jalalidatepicker.min.css' %}" />
+    <script type="text/javascript" src="{% static 'js/jalalidatepicker.min.js' %}"></script>
+    <script src="{% static 'js/jalali-moment.browser.js' %}"></script>
 </head>
 <body>
     <!-- دکمه بازگشت با تغییرات جدید -->
@@ -135,38 +139,22 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", function() {
-            let dateInput = document.querySelector("[name='date']");
+            // پیدا کردن فیلد تاریخ
+            let dateInput = document.getElementById('datepicker') || document.querySelector("input[name='date']");
+            
             if (dateInput) {
-                dateInput.setAttribute("id", "datepicker");
-
-                // ایجاد تاریخ امروز به صورت شمسی
-                let todayPersian = new persianDate().toLocale('fa');
-                let todayFormatted = todayPersian.format('YYYY/MM/DD');
-        
-                $("#datepicker").persianDatepicker({
-                    format: 'YYYY/MM/DD',
-                    initialValue: true,
-                    initialValueType: 'persian', // این خط مهم است
-                    autoClose: true,
-                    observer: true,
-                    calendar: {
-                        persian: { 
-                            locale: 'fa',
-                            showHint: true
-                        }
-                    },
-                    timePicker: {
-                        enabled: false
-                   },  
-                    initialValue: todayFormatted, // تنظیم تاریخ امروز به عنوان مقدار اولیه
-                    onSelect: function (unixDate) {
-                        var pd = new persianDate(unixDate).toLocale('fa');
-                        dateInput.value = pd.format('YYYY/MM/DD');
-                    }
-                });
-
-                // مقداردهی اولیه فیلد
-                dateInput.value = todayFormatted;
+                // محاسبه تاریخ جلالی امروز
+                const todayJalali = moment().locale('fa').format('YYYY/MM/DD');
+                
+                // تنظیم مقدار پیش‌فرض برای فیلد
+                dateInput.value = todayJalali;
+                
+                // اضافه کردن attribute مورد نیاز برای jalaliDatepicker
+                dateInput.setAttribute('data-jdp', '');
+                
+                // مقداردهی اولیه jalaliDatepicker
+                // startWatch به صورت خودکار تمام input های با data-jdp را پیدا می‌کند
+                jalaliDatepicker.startWatch();
             }
         });
     </script>
