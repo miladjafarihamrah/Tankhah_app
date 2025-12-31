@@ -74,7 +74,7 @@
             justify-content: space-between;
             align-items: center;
             transition: background-color 0.3s ease, color 0.3s ease;
-            flex-wrap: wrap;
+            gap: 10px;
         }
 
         .khodro-item:hover {
@@ -82,9 +82,36 @@
             color: white;
         }
 
-        .khodro-item span {
+        .khodro-content {
+            display: flex;
             flex: 1;
-            margin-right: 10px;
+            min-width: 0;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .khodro-item span {
+            flex: 0 1 auto;
+            min-width: 0;
+            margin-right: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* فاصله بیشتر در حالت دسکتاپ */
+        @media (min-width: 769px) {
+            .khodro-content {
+                gap: 20px;
+            }
+        }
+
+        .khodro-actions {
+            display: flex;
+            flex-shrink: 0;
+            gap: 5px;
+            align-items: center;
         }
 
         .khodro-item button {
@@ -96,10 +123,12 @@
             cursor: pointer;
             transition: background-color 0.3s;
             font-family: 'Mellat-Regular', sans-serif;
-            margin-left: 10px;
+            margin-left: 0;
             font-size: 14px;
             display: inline-flex;
             align-items: center;
+            flex-shrink: 0;
+            min-width: 32px;
         }
 
         .khodro-item button:hover {
@@ -148,13 +177,16 @@
 
             .khodro-item {
                 padding: 10px;
-                flex-wrap: nowrap;
+                flex-direction: row;
+            }
+
+            .khodro-content {
+                flex-wrap: wrap;
             }
 
             .khodro-item button {
                 padding: 4px;
                 font-size: 12px;
-                margin-left: 5px;
             }
 
             .khodro-item span {
@@ -175,9 +207,13 @@
                 align-items: center;
             }
 
+            .khodro-content {
+                flex: 1;
+                min-width: 0;
+            }
+
             .khodro-item button {
                 width: auto;
-                margin-left: 5px;
                 padding: 6px 12px;
                 font-size: 10px;
             }
@@ -202,20 +238,24 @@
     <ul class="khodro-list" id="khodroList">
         {% for khodro in khodros %}
         <li class="khodro-item" data-id="{{ khodro.id }}" data-date="{{ khodro.date }}">
-            <span class="khodro-date">{{ khodro.date }}</span>
-            <span>{{ khodro.kilometer }}</span>
-            <span class="formatted-amount" data-amount="{{ khodro.amount }}">{{ khodro.amount }} ریال</span>
-            <span>{{ khodro.description }}</span>
-    
-            <!-- دکمه ویرایش -->
-            <button class="edit-button" onclick="editKhodro('{{ khodro.id }}', '{{ khodro.kilometer }}', '{{ khodro.amount }}', '{{ khodro.description }}')">
-                <i class="fas fa-pencil-alt"></i>
-            </button>
-    
-            <!-- دکمه حذف -->
-            <button class="delete-button" onclick="deleteKhodro('{{ khodro.id }}')">
-                <i class="fas fa-trash-alt"></i>
-            </button>
+            <div class="khodro-content">
+                <span class="khodro-date">{{ khodro.date }}</span>
+                <span>{{ khodro.kilometer }}</span>
+                <span class="formatted-amount" data-amount="{{ khodro.amount }}">{{ khodro.amount }} ریال</span>
+                <span>{{ khodro.description }}</span>
+            </div>
+            
+            <div class="khodro-actions">
+                <!-- دکمه ویرایش -->
+                <button class="edit-button" onclick="editKhodro('{{ khodro.id }}', '{{ khodro.kilometer }}', '{{ khodro.amount }}', '{{ khodro.description }}')">
+                    <i class="fas fa-pencil-alt"></i>
+                </button>
+        
+                <!-- دکمه حذف -->
+                <button class="delete-button" onclick="deleteKhodro('{{ khodro.id }}')">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
         </li>
         {% endfor %}
     </ul>

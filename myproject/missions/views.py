@@ -28,6 +28,19 @@ from datetime import datetime
 from openpyxl import load_workbook, Workbook
 from django.contrib.auth.decorators import login_required
 from .forms import UserUpdateForm
+import json
+
+# استفاده از requests اگر موجود باشد، در غیر این صورت از urllib
+try:
+    import requests
+    HAS_REQUESTS = True
+except ImportError:
+    HAS_REQUESTS = False
+    try:
+        from urllib.request import urlopen, Request
+        from urllib.error import URLError
+    except ImportError:
+        pass
 # دیکشنری برای تبدیل نام ماه‌های شمسی به انگلیسی
 PERSIAN_MONTH_TO_ENGLISH = {
     'فروردین': 'Farvardin',
@@ -43,6 +56,25 @@ PERSIAN_MONTH_TO_ENGLISH = {
     'بهمن': 'Bahman',
     'اسفند': 'Esfand'
 }
+
+# دیکشنری برای تبدیل نام روزهای هفته به فارسی
+PERSIAN_WEEKDAYS = {
+    0: 'شنبه',
+    1: 'یکشنبه',
+    2: 'دوشنبه',
+    3: 'سه‌شنبه',
+    4: 'چهارشنبه',
+    5: 'پنج‌شنبه',
+    6: 'جمعه'
+}
+
+# تابع تبدیل اعداد انگلیسی به فارسی
+def to_persian_digits(text):
+    persian_digits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹']
+    english_digits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+    for i, digit in enumerate(english_digits):
+        text = text.replace(digit, persian_digits[i])
+    return text
 
 
 def signup(request):
@@ -82,16 +114,317 @@ def update_profile(request):
         form = UserUpdateForm(instance=request.user)
 
     return render(request, 'update_profile.html', {'form': form})
+
+#صفحه ابزار
+@login_required
+def tools(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+    return render(request, 'tools.html')
+
+#صفحه انتخاب نرم افزار
+@login_required
+def select_software(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+    return render(request, 'select_software.html')
+
+#صفحه منوال دستگاه ها
+@login_required
+def device_manual(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+    return render(request, 'device_manual.html')
+
+#صفحه قیمت طلا و دلار
+@login_required
+def gold_price(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+    
+    # دریافت قیمت‌ها از API
+    gold_price_18k = None
+    silver_price = None
+    dollar_price = None
+    error_message = None
+    
+    def get_price_from_api():
+        """تابع برای دریافت قیمت‌ها از API جایگزین"""
+        gold_18k = None
+        silver = None
+        dollar = None
+        
+        if not HAS_REQUESTS:
+            return None, None, None
+        
+        # روش 1: استفاده از API ساده و مستقیم
+        try:
+            # دریافت قیمت طلا 18 عیار
+            gold_url = 'https://call.tgju.org/ajax.json?p=geram18'
+            gold_resp = requests.get(gold_url, timeout=8, headers={'User-Agent': 'Mozilla/5.0'})
+            if gold_resp.status_code == 200:
+                gold_data = gold_resp.json()
+                if isinstance(gold_data, dict):
+                    # بررسی ساختارهای مختلف
+                    if 'p' in gold_data:
+                        gold_18k = int(float(gold_data['p']))
+                    elif 'price' in gold_data:
+                        gold_18k = int(float(gold_data['price']))
+                    elif 'value' in gold_data:
+                        gold_18k = int(float(gold_data['value']))
+        except Exception as e:
+            pass
+        
+        try:
+            # دریافت قیمت نقره
+            silver_url = 'https://call.tgju.org/ajax.json?p=geram999'
+            silver_resp = requests.get(silver_url, timeout=8, headers={'User-Agent': 'Mozilla/5.0'})
+            if silver_resp.status_code == 200:
+                silver_data = silver_resp.json()
+                if isinstance(silver_data, dict):
+                    if 'p' in silver_data:
+                        silver = int(float(silver_data['p']))
+                    elif 'price' in silver_data:
+                        silver = int(float(silver_data['price']))
+                    elif 'value' in silver_data:
+                        silver = int(float(silver_data['value']))
+        except Exception as e:
+            pass
+        
+        try:
+            # دریافت قیمت دلار
+            dollar_url = 'https://call.tgju.org/ajax.json?p=usd'
+            dollar_resp = requests.get(dollar_url, timeout=8, headers={'User-Agent': 'Mozilla/5.0'})
+            if dollar_resp.status_code == 200:
+                dollar_data = dollar_resp.json()
+                if isinstance(dollar_data, dict):
+                    if 'p' in dollar_data:
+                        dollar = int(float(dollar_data['p']))
+                    elif 'price' in dollar_data:
+                        dollar = int(float(dollar_data['price']))
+                    elif 'value' in dollar_data:
+                        dollar = int(float(dollar_data['value']))
+        except Exception as e:
+            pass
+        
+        # اگر قیمت‌ها دریافت شدند، برگردان (حتی اگر یکی از آن‌ها None باشد)
+        if gold_18k or silver or dollar:
+            return gold_18k, silver, dollar
+        
+        # روش 2: استفاده از API navasan
+        try:
+            api_url = 'https://api.navasan.tech/latest/?item=geram18,geram999,usd'
+            response = requests.get(api_url, timeout=8, headers={'User-Agent': 'Mozilla/5.0'})
+            if response.status_code == 200:
+                data = response.json()
+                if isinstance(data, dict):
+                    if not gold_18k and 'geram18' in data:
+                        gold_val = data['geram18']
+                        if isinstance(gold_val, dict):
+                            gold_18k = int(float(gold_val.get('value', gold_val.get('price', 0))))
+                        else:
+                            gold_18k = int(float(gold_val))
+                    
+                    if not silver and 'geram999' in data:
+                        silver_val = data['geram999']
+                        if isinstance(silver_val, dict):
+                            silver = int(float(silver_val.get('value', silver_val.get('price', 0))))
+                        else:
+                            silver = int(float(silver_val))
+                    
+                    if not dollar and 'usd' in data:
+                        dollar_val = data['usd']
+                        if isinstance(dollar_val, dict):
+                            dollar = int(float(dollar_val.get('value', dollar_val.get('price', 0))))
+                        else:
+                            dollar = int(float(dollar_val))
+        except Exception as e:
+            pass
+        
+        # روش 3: استفاده از API tgju با ساختار متفاوت
+        try:
+            # دریافت همه قیمت‌ها از یک endpoint
+            all_url = 'https://api.tgju.org/v1/data/sanarate/v1'
+            all_resp = requests.get(all_url, timeout=8, headers={'User-Agent': 'Mozilla/5.0'})
+            if all_resp.status_code == 200:
+                all_data = all_resp.json()
+                if isinstance(all_data, dict) and 'data' in all_data:
+                    prices_list = all_data['data']
+                    if isinstance(prices_list, list):
+                        for item in prices_list:
+                            if isinstance(item, dict):
+                                key = str(item.get('key', '')).lower()
+                                price_val = item.get('p', item.get('price', 0))
+                                
+                                if not gold_18k and ('geram18' in key or 'gold18' in key):
+                                    try:
+                                        gold_18k = int(float(price_val))
+                                    except:
+                                        pass
+                                
+                                if not silver and ('geram999' in key or 'silver999' in key):
+                                    try:
+                                        silver = int(float(price_val))
+                                    except:
+                                        pass
+                                
+                                if not dollar and 'usd' in key:
+                                    try:
+                                        dollar = int(float(price_val))
+                                    except:
+                                        pass
+        except Exception as e:
+            pass
+        
+        return gold_18k, silver, dollar
+    
+    try:
+        # استفاده از API جایگزین برای دریافت قیمت‌ها
+        if HAS_REQUESTS:
+            # دریافت قیمت‌ها از API جایگزین
+            gold_18k, silver, dollar = get_price_from_api()
+            
+            if gold_18k and gold_18k > 0:
+                gold_price_18k = gold_18k
+            if silver and silver > 0:
+                silver_price = silver
+            if dollar and dollar > 0:
+                dollar_price = dollar
+            
+            # اگر هنوز قیمت‌ها پیدا نشد، از endpoint کلی استفاده کن
+            if not gold_price_18k or not silver_price or not dollar_price:
+                try:
+                    all_prices_url = 'https://api.tgju.org/v1/data/sanarate/v1'
+                    all_response = requests.get(all_prices_url, timeout=10, headers={'User-Agent': 'Mozilla/5.0'})
+                    if all_response.status_code == 200:
+                        all_data = all_response.json()
+                        if isinstance(all_data, dict) and 'data' in all_data:
+                            prices_list = all_data['data']
+                            if isinstance(prices_list, list):
+                                for item in prices_list:
+                                    if isinstance(item, dict):
+                                        key = str(item.get('key', '')).lower()
+                                        price = item.get('p', item.get('price', 0))
+                                        
+                                        if not gold_price_18k and ('geram18' in key or 'gold18' in key):
+                                            try:
+                                                gold_price_18k = int(float(price))
+                                            except:
+                                                pass
+                                        
+                                        if not silver_price and ('geram999' in key or 'silver999' in key):
+                                            try:
+                                                silver_price = int(float(price))
+                                            except:
+                                                pass
+                                        
+                                        if not dollar_price and 'usd' in key:
+                                            try:
+                                                dollar_price = int(float(price))
+                                            except:
+                                                pass
+                except:
+                    pass
+        else:
+            # استفاده از urllib
+            try:
+                from urllib.request import urlopen, Request
+                from urllib.error import URLError
+                
+                # دریافت قیمت طلا
+                try:
+                    gold_url = 'https://api.tgju.org/v1/data/sanarate/geram18'
+                    req = Request(gold_url, headers={'User-Agent': 'Mozilla/5.0'})
+                    with urlopen(req, timeout=10) as response:
+                        gold_data = json.loads(response.read().decode())
+                        if isinstance(gold_data, dict) and 'data' in gold_data:
+                            price = gold_data['data'].get('p', gold_data['data'].get('price', 0))
+                            if price:
+                                gold_price_18k = int(float(price))
+                except:
+                    pass
+                
+                # دریافت قیمت نقره
+                try:
+                    silver_url = 'https://api.tgju.org/v1/data/sanarate/geram999'
+                    req = Request(silver_url, headers={'User-Agent': 'Mozilla/5.0'})
+                    with urlopen(req, timeout=10) as response:
+                        silver_data = json.loads(response.read().decode())
+                        if isinstance(silver_data, dict) and 'data' in silver_data:
+                            price = silver_data['data'].get('p', silver_data['data'].get('price', 0))
+                            if price:
+                                silver_price = int(float(price))
+                except:
+                    pass
+                
+                # دریافت قیمت دلار
+                try:
+                    dollar_url = 'https://api.tgju.org/v1/data/sanarate/usd'
+                    req = Request(dollar_url, headers={'User-Agent': 'Mozilla/5.0'})
+                    with urlopen(req, timeout=10) as response:
+                        dollar_data = json.loads(response.read().decode())
+                        if isinstance(dollar_data, dict) and 'data' in dollar_data:
+                            price = dollar_data['data'].get('p', dollar_data['data'].get('price', 0))
+                            if price:
+                                dollar_price = int(float(price))
+                except:
+                    pass
+            except Exception as e:
+                pass
+        
+        # بررسی وضعیت دریافت قیمت‌ها
+        if not gold_price_18k and not silver_price and not dollar_price:
+            error_message = "امکان دریافت قیمت‌ها از سرور وجود ندارد. لطفاً اتصال اینترنت خود را بررسی کنید و بعداً تلاش کنید."
+        elif not gold_price_18k or not silver_price or not dollar_price:
+            # اگر برخی قیمت‌ها دریافت شدند، پیام جزئی نمایش بده
+            missing = []
+            if not gold_price_18k:
+                missing.append("طلا")
+            if not silver_price:
+                missing.append("نقره")
+            if not dollar_price:
+                missing.append("دلار")
+            error_message = f"برخی قیمت‌ها دریافت نشد: {', '.join(missing)}"
+            
+    except Exception as e:
+        error_message = f"خطا در اتصال به سرور: {str(e)}"
+    
+    # تبدیل قیمت‌ها به اعداد فارسی برای نمایش با جداسازی سه‌رقمی
+    def format_persian_number(num):
+        if num:
+            # جداسازی سه‌رقمی
+            num_str = f"{num:,}"
+            # تبدیل به فارسی
+            return to_persian_digits(num_str)
+        return None
+    
+    gold_price_18k_persian = format_persian_number(gold_price_18k)
+    silver_price_persian = format_persian_number(silver_price)
+    dollar_price_persian = format_persian_number(dollar_price)
+    
+    return render(request, 'gold_price.html', {
+        'gold_price_18k': gold_price_18k,
+        'gold_price_18k_persian': gold_price_18k_persian,
+        'silver_price': silver_price,
+        'silver_price_persian': silver_price_persian,
+        'dollar_price': dollar_price,
+        'dollar_price_persian': dollar_price_persian,
+        'error_message': error_message,
+    })
+
 #صفحه اصلی برنامه
 def home(request):
     if not request.user.is_authenticated:
         return redirect('login')
     
     # دریافت تاریخ جاری به صورت شمسی
-    today = jdatetime.datetime.now().strftime('%Y/%m/%d')
-    
-    # دریافت تاریخ جاری شمسی
     current_jalali = jdatetime.datetime.now()
+    today = current_jalali.strftime('%Y/%m/%d')
+    # تبدیل اعداد تاریخ به فارسی
+    today = to_persian_digits(today)
+    
+    # دریافت نام روز هفته
+    weekday_name = PERSIAN_WEEKDAYS[current_jalali.weekday()]
     current_year = current_jalali.year
     current_month = current_jalali.month
 
@@ -117,6 +450,7 @@ def home(request):
     return render(request, 'home.html', {
         'full_name': full_name,
         'today': today,
+        'weekday_name': weekday_name,
         'mission_count': total_mission_units,  # تعداد ماموریت‌های ماه جاری
         'balance': balance,  # ارسال مانده حساب به تمپلیت
     })

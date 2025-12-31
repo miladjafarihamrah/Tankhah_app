@@ -135,6 +135,32 @@
             text-align: right;
         }
 
+        /* استایل برای کارت مانده حساب قابل کلیک */
+        #balance-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        #balance-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        /* انیمیشن کشویی برای فرم */
+        #balance-form-container {
+            transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
+            max-height: 0;
+            opacity: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+
+        #balance-form-container.show {
+            max-height: 200px;
+            opacity: 1;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+
     </style>
 </head>
 <body>
@@ -156,7 +182,7 @@
 
     <div class="container mt-5">
         <h1 class="text-center animate__animated animate__fadeIn">سلام، {{ full_name }}!</h1>
-        <p class="text-center text-muted float-end">امروز: {{ today }}</p>
+        <p class="text-center text-muted float-end">امروز: {{ weekday_name }}، {{ today }}</p>
 
         <!-- کارت‌های اطلاعات -->
         <div class="row mb-4">
@@ -169,7 +195,7 @@
                 </div>
             </div>
             <div class="col-md-6 mb-3">
-                <div class="card text-center shadow animate__animated animate__fadeInRight">
+                <div class="card text-center shadow animate__animated animate__fadeInRight" id="balance-card" style="cursor: pointer;">
                     <div class="card-body">
                         <h5 class="card-title">مانده حساب(ریال)</h5>
                         <p class="display-4 text-success" id="budget-value">{{ balance }}</p>
@@ -179,7 +205,7 @@
         </div>
 
         <!-- فرم تغییر مانده حساب -->
-        <div class="text-center mb-4">
+        <div id="balance-form-container" class="text-center mb-4" style="display: none; overflow: hidden;">
             <h3>افزایش مانده حساب</h3>
             <form method="post" action="{% url 'update_balance' %}" class="d-flex justify-content-center gap-2 align-items-center">
                 {% csrf_token %}
@@ -211,7 +237,7 @@
             <a href="{% url 'add_expense' %}" class="btn">ثبت تنخواه</a>
             <a href="{% url 'hazineh_khodro' %}" class="btn">فرم خودرویی</a>
             <a href="{% url 'generate_report' %}" class="btn">گزارش‌گیری</a>
-            
+            <a href="{% url 'tools' %}" class="btn">ابزار</a>
         </div>
     </div>
 
@@ -228,6 +254,25 @@
             return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
         }
     
+        // تابع نمایش/مخفی کردن فرم با انیمیشن کشویی
+        function toggleBalanceForm() {
+            const formContainer = document.getElementById("balance-form-container");
+            if (formContainer) {
+                formContainer.classList.toggle("show");
+                // اگر نمایش داده می‌شود، display را block کن
+                if (formContainer.classList.contains("show")) {
+                    formContainer.style.display = "block";
+                } else {
+                    // بعد از انیمیشن، display را none کن
+                    setTimeout(() => {
+                        if (!formContainer.classList.contains("show")) {
+                            formContainer.style.display = "none";
+                        }
+                    }, 300);
+                }
+            }
+        }
+
         document.addEventListener("DOMContentLoaded", function() {
             let missionCount = document.getElementById("mission-count");
             let budgetValue = document.getElementById("budget-value");
@@ -240,6 +285,12 @@
             if (budgetValue) {
                 let num = budgetValue.innerText.replace(/,/g, '').trim();
                 budgetValue.innerText = convertToPersian(formatNumber(num));
+            }
+    
+            // اضافه کردن event listener به کارت مانده حساب
+            const balanceCard = document.getElementById("balance-card");
+            if (balanceCard) {
+                balanceCard.addEventListener("click", toggleBalanceForm);
             }
     
             let amountInput = document.querySelector("input[name='amount']");

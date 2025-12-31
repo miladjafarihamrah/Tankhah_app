@@ -42,4 +42,8 @@ urlpatterns = [
     path('edit_khodro/', views.edit_khodro, name='edit_khodro'),
     path('delete_khodro/', views.delete_khodro, name='delete_khodro'),
     path('edit_khodro_details/', views.edit_khodro_details, name='edit_khodro_details'),
+    path('tools/', views.tools, name='tools'),
+    path('gold_price/', views.gold_price, name='gold_price'),
+    path('select_software/', views.select_software, name='select_software'),
+    path('device_manual/', views.device_manual, name='device_manual'),
 ]
