@@ -29,7 +29,7 @@ DEBUG = True
 ALLOWED_HOSTS = ['*']
 
 
-CSRF_TRUSTED_ORIGINS = ["https://supishi.net:9001",]
+CSRF_TRUSTED_ORIGINS = ["https://supishi.net", "https://www.supishi.net", "https://tankhah.supishi.net"]
 
 
 # Application definition
